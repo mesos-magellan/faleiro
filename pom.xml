@@ -14,6 +14,11 @@
             <artifactId>mesos</artifactId>
             <version>0.25.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.netflix.fenzo</groupId>
+            <artifactId>fenzo-core</artifactId>
+            <version>0.8.6</version>
+        </dependency>
     </dependencies>
 
 </project>
