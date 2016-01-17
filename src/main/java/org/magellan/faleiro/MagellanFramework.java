@@ -9,9 +9,7 @@ import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,6 +46,7 @@ public class MagellanFramework {
                 case TASK_LOST:
                 case TASK_FINISHED:
                     // TODO: Parse data from executor to figure out result of the SA to determine starting point of next task
+                    //Notify Fenzo that the task has completed and is no longer assigned
                     fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
                     break;
             }
@@ -80,6 +79,8 @@ public class MagellanFramework {
     private final AtomicBoolean isFrameworkShutdown = new AtomicBoolean(false);
     private final ConcurrentHashMap<Long, MagellanJob> jobsList = new ConcurrentHashMap<>();
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
+    private final Map<String, TaskRequest> pendingTasksMap = new HashMap<>();
+    private final BlockingQueue<TaskRequest> taskQueue = new LinkedBlockingQueue<TaskRequest>();
 
     private  long numCreatedJobs = 0;
     private final Map<String, String> launchedTasks = new HashMap<>();
@@ -195,6 +196,114 @@ public class MagellanFramework {
      *  to the Mesos Driver for execution.
      */
     public void runFramework(){
+        System.out.println("Running all");
+        List<VirtualMachineLease> newLeases = new ArrayList<>();
+        List<TaskRequest> newTaskRequests = new ArrayList<>();
 
+        while(true) {
+            // Only if the framework has shutdown do we exist our main loop
+            if(isFrameworkShutdown.get())
+                return;
+
+            System.out.println("#Pending tasks: " + pendingTasksMap.size());
+
+            // Clear all the local data structures in preparation of a new loop
+            newLeases.clear();
+            newTaskRequests.clear();
+
+            // Iterate through all jobs that are active on the system and for each running job, get a list of all pending tasks
+            // and save this.
+            // TODO: Its possible that we may need to use the poll() call with a timeout to delay a bit inside getPendingTasks
+            Iterator it = jobsList.entrySet().iterator();
+            while(it.hasNext()){
+                Map.Entry pair = (Map.Entry)it.next();
+                MagellanJob j = (MagellanJob) pair.getValue();
+                if(j.getStatus() == MagellanJob.JobState.RUNNING){
+                    BlockingQueue<TaskRequest> pending = j.getPendingTasks();
+                    for(TaskRequest request : pending){
+                        pendingTasksMap.put(request.getId(),request);
+                    }
+                }
+            }
+            // Copy all the resource offers into a local datastructure as leasesQueue is accessed by several threads
+            leasesQueue.drainTo(newLeases);
+
+            // Pass our list of pending tasks as well as current resource offers to Fenzo and receive a mapping between the two
+            SchedulingResult schedulingResult = fenzoScheduler.scheduleOnce(new ArrayList<>(pendingTasksMap.values()), newLeases);
+            System.out.println("result=" + schedulingResult);
+
+            // Now use the mesos driver to schedule the tasks
+            Map<String,VMAssignmentResult> resultMap = schedulingResult.getResultMap();
+            if(!resultMap.isEmpty()) {
+
+                // We now launch tasks on a per host basis. Hosts (VMAssignmentResult) can offer multiple resource offers (called leases)
+                for(VMAssignmentResult result: resultMap.values()) {
+                    List<Protos.TaskInfo> taskInfos = new ArrayList<>();
+
+                    // Get a list of all the resource offers that will be used for this host
+                    List<VirtualMachineLease> leasesUsed = result.getLeasesUsed();
+                    StringBuilder stringBuilder = new StringBuilder("Launching on VM " + leasesUsed.get(0).hostname() + " tasks ");
+                    final Protos.SlaveID slaveId = leasesUsed.get(0).getOffer().getSlaveId();
+
+                    // For each task that will be run on this host, build a TaskInfo object which will be submitted to
+                    // the mesos driver for scheduling
+                    for(TaskAssignmentResult t: result.getTasksAssigned()) {
+                        stringBuilder.append(t.getTaskId()).append(", ");
+                        taskInfos.add(getTaskInfo(slaveId, t.getTaskId(), ""));
+                        // remove task from pending tasks map and put into launched tasks map
+                        pendingTasksMap.remove(t.getTaskId());
+                        launchedTasks.put(t.getTaskId(), leasesUsed.get(0).hostname());
+                        // Notify Fenzo that the task is being deployed to a host
+                        fenzoScheduler.getTaskAssigner().call(t.getRequest(), leasesUsed.get(0).hostname());
+                    }
+                    List<Protos.OfferID> offerIDs = new ArrayList<>();
+                    // Get a list of all the resource offer ids used for this host.
+                    for(VirtualMachineLease l: leasesUsed)
+                        offerIDs.add(l.getOffer().getId());
+
+                    System.out.println(stringBuilder.toString());
+                    // Finally get the mesos driver to launch the tasks on this host
+                    mesosSchedulerDriver.launchTasks(offerIDs, taskInfos);
+                }
+            }
+            // TODO: Posibly remove/increase this?
+            try{Thread.sleep(100);}catch(InterruptedException ie){}
+        }
     }
+
+
+    /**
+     * Packages the information we want to send over into a TaskInfo construct which we can send
+     * Currently commented out as the format of the data send in each task is still unclear
+     * @param slaveID
+     * @param taskId
+     * @param data
+     * @return
+     */
+    private Protos.TaskInfo getTaskInfo(Protos.SlaveID slaveID, final String taskId, String data) {
+        /*
+        Protos.TaskID pTaskId = Protos.TaskID.newBuilder()
+                .setValue(taskId).build();
+        return Protos.TaskInfo.newBuilder()
+                .setName("task " + pTaskId.getValue())
+                .setTaskId(pTaskId)
+                .setSlaveId(slaveID)
+                .addResources(Protos.Resource.newBuilder()
+                        .setName("cpus")
+                        .setType(Protos.Value.Type.SCALAR)
+                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(1)))
+                .addResources(Protos.Resource.newBuilder()
+                        .setName("mem")
+                        .setType(Protos.Value.Type.SCALAR)
+                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(128)))
+                .build();
+
+                // The functions below could be useful for this.
+                //.setData(ByteString.copyFromUtf8(data))
+                //.setCommand(Protos.CommandInfo.newBuilder().setValue(taskCmdGetter.call(taskId)).build())
+                //.setExecutor(ExecutorInfo.newBuilder(mExecutor))
+        */
+        throw new UnsupportedOperationException();
+    }
+
 }
