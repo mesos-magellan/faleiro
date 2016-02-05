@@ -158,9 +158,9 @@ public class MagellanFramework {
         }).start();
     }
 
-    public long createJob() {
+    public long createJob(int startingTemp, double startingCoolingRate) {
         long id = numCreatedJobs++;
-        MagellanJob j = new MagellanJob(id);
+        MagellanJob j = new MagellanJob(id, startingTemp, startingCoolingRate);
         jobsList.put(id, j);
         j.start();
 
@@ -219,7 +219,7 @@ public class MagellanFramework {
                 Map.Entry pair = (Map.Entry)it.next();
                 MagellanJob j = (MagellanJob) pair.getValue();
                 if(j.getStatus() == MagellanJob.JobState.RUNNING){
-                    BlockingQueue<TaskRequest> pending = j.getPendingTasks();
+                    ArrayList<TaskRequest> pending = j.getPendingTasks();
                     for(TaskRequest request : pending){
                         pendingTasksMap.put(request.getId(),request);
                     }
