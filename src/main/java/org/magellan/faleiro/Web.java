@@ -1,12 +1,17 @@
 package org.magellan.faleiro;
 
+import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
 import spark.Spark;
 
 public class Web {
 
+    private static MagellanFramework framework;
+
     public static void main(String[] args) {
+        framework = new MagellanFramework("10.144.144.10:5050");
+        framework.startFramework();
         initWebRoutes();
     }
 
@@ -22,7 +27,15 @@ public class Web {
     }
 
     private static String createJob(Request req, Response res) {
-        throw new UnsupportedOperationException();
+        JSONObject jsonRes = new JSONObject();
+        long jobId = framework.createJob();
+        if(jobId < 0) {
+            jsonRes.put("message", "Failed to create job");
+        } else {
+            jsonRes.put("job_id", jobId);
+            jsonRes.put("message", "Job created successfully");
+        }
+        return jsonRes.toString();
     }
 
     private static String updateJobStatus(Request req, Response res) {
