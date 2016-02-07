@@ -37,6 +37,7 @@ public class Web {
      *     iterations_per_temp : int,
      *     docker_name : String
      * }
+     *
      * // Job successfully created
      * Response(200):
      * {
@@ -44,6 +45,11 @@ public class Web {
      * }
      * // Missing parameter
      * Response(422):
+     * {
+     *     message : String
+     * }
+     * // Failure to create job on scheduler side
+     * Response(500):
      * {
      *     message : String
      * }*/
@@ -77,6 +83,13 @@ public class Web {
         return jsonRes.toString();
     }
 
+    /** PUT /api/job/{job_id}/status
+     *
+     * Request:
+     * {
+     *
+     * }
+     */
     private static String updateJobStatus(Request req, Response res) {
         throw new UnsupportedOperationException();
     }
