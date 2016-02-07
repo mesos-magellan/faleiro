@@ -46,8 +46,11 @@ public class MagellanFramework {
                 case TASK_FAILED:
                 case TASK_LOST:
                 case TASK_FINISHED:
-                    // TODO: Parse data from executor to figure out result of the SA to determine starting point of next task
-                    
+                    // Find which job this task is associated with at forward the message to it
+                    String taskID = recoverTaskId(taskStatus.getData());
+                    jobsList.get(submittedTaskIdsToJobIds.get(taskID)).processIncomingMessages(taskStatus.getData());
+                    submittedTaskIdsToJobIds.remove(taskID);
+
                     //Notify Fenzo that the task has completed and is no longer assigned
                     fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
                     break;
@@ -82,7 +85,7 @@ public class MagellanFramework {
     private final ConcurrentHashMap<Long, MagellanJob> jobsList = new ConcurrentHashMap<>();
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
     private final Map<String, MagellanTaskRequest> pendingTasksMap = new HashMap<>();
-    private final BlockingQueue<MagellanTaskRequest> taskQueue = new LinkedBlockingQueue<MagellanTaskRequest>();
+    private final HashMap<String, Long> submittedTaskIdsToJobIds = new HashMap<>();
 
     private  long numCreatedJobs = 0;
     private final Map<String, String> launchedTasks = new HashMap<>();
@@ -227,6 +230,7 @@ public class MagellanFramework {
                     ArrayList<MagellanTaskRequest> pending = j.getPendingTasks();
                     for(MagellanTaskRequest request : pending){
                         pendingTasksMap.put(request.getId(),request);
+                        submittedTaskIdsToJobIds.put(request.getId(),j.getJobID());
                     }
                 }
             }
@@ -309,6 +313,16 @@ public class MagellanFramework {
                 //.setExecutor(ExecutorInfo.newBuilder(mExecutor))
         */
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Given a Bytestring message from an executor, returns the task number
+     * @param bs
+     * @return
+     */
+    public String recoverTaskId(ByteString bs){
+        JSONObject o = new JSONObject(bs);
+        return (String) o.get(MagellanTaskDataJsonTag.UID);
     }
 
 }

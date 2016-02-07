@@ -11,7 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class MagellanJob {
 
-    private final double TEMP_MIN = 0.00001;
+    private final double TEMP_MIN = 0.0001;
     private final double NUM_CPU = 1;
     private final double NUM_MEM = 128;
     private final double NUM_NET_MBPS = 0;
@@ -69,19 +69,47 @@ public class MagellanJob {
         jobName = name;
     }
 
-    public void start() {
+    /**
+     * Returns the job ID
+     * @return
+     */
+    public long getJobID() {
+        return jobID;
+    }
 
+    /**
+     * Returns the name of the job
+     * @return
+     */
+    public String getJobName() {
+        return jobName;
+    }
+
+    /**
+     * Starts the main thread of the job. This should be run in a seperate thread from the main framework
+     * thread.
+     *
+     * This functions creates tasks that are passed to the magellan framework using an annealing approach.
+     * We determine the starting location of each task using a temperature cooling mechanism where early on
+     * in the execution of this job, more risks are taken and more tasks run in random locations in an attempt
+     * to explore more of the search space. As time increases and the temperature of the job decreases, tasks
+     * are given starting locations much closer to the global, best solution for this job so that the neighbors
+     * of the best solution are evaluated thoroughly in the hopes that they lie close to the global maximum.
+     */
+    public void start() {
         while (jobTemp >= TEMP_MIN) {
-            for(int i = 0; i< jobIterationsPerTemp ; i++) {
+            int i = 0;
+            while(i < jobIterationsPerTemp) {
+                i++;
                 try {
-                    // First take care of all the message that have been sent back as it is detrimental to get the
-                    // current best
-                    while(!receivedMessages.isEmpty()) {
-                        processMessages(receivedMessages.take());
-                    }
+                    // To keep the task ids unique throughout the global job space, use the job ID to
+                    // ensure uniqueness
                     String newTaskId = "" + jobID + (++numTasksSent);
 
+                    // Choose the magellan specific parameters for the new task
                     ByteString data = pickNewTaskData(newTaskId);
+                    // Create a task request object with parameters that fenzo will be looking for when
+                    // pairing mesos resource offers with magellan tasks.
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
                                                     newTaskId,
                                                     jobName,
@@ -92,23 +120,39 @@ public class MagellanJob {
                                                     NUM_PORTS,
                                                     data);
 
-
+                    // Add the task to the pending queue which will be serviced by the magellan framework
+                    // when it is ready.
                     pendingTasks.put(newTask);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
             }
-            jobTemp = jobTemp*jobCoolingRate;
+            jobTemp = jobTemp * jobCoolingRate;
         }
-        throw new UnsupportedOperationException();
+        System.out.println("[" + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
     }
 
-    public void processMessages(ByteString o) {
+    /**
+     * Called by magellan framework when a message from the executor is sent to this job. This method
+     * processess the message and changes the best location and fitness store if needed.
+     * @param o
+     */
+    public void processIncomingMessages(ByteString o) {
+        // Retrieve the data sent by the executor
+        JSONObject js = new JSONObject(o);
+        String taskID = (String) js.get(MagellanTaskDataJsonTag.UID);
+        double fitness_score = (double) js.get(MagellanTaskDataJsonTag.FITNESS_SCORE);
+        String best_location = (String) js.get(MagellanTaskDataJsonTag.BEST_LOCATION);
 
+        // If a better score was discovered, make this our global, best location
+        if(fitness_score > jobBestEnergy) {
+            jobCurrentBestSolution = best_location;
+        }
+        System.out.println("[" + taskID + "] Updated global best. Fitness: " + fitness_score + ". Path: " + best_location);
     }
 
     public void stop() {
+        state = JobState.STOP;
         throw new UnsupportedOperationException();
     }
 
@@ -122,10 +166,19 @@ public class MagellanJob {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Called by the zookeeper service to transfer a snapshot of the current state of the job to save in
+     * case this node goes down.
+     * @return A snapshot of all the important information in this job
+     */
     public JobState getStatus(){
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Called by the magellan framework to get a list of tasks that this job wants scheduled.
+     * @return
+     */
     public ArrayList<MagellanTaskRequest> getPendingTasks(){
         ArrayList<MagellanTaskRequest> pt = new ArrayList<>();
         pendingTasks.drainTo(pt);
@@ -149,10 +202,22 @@ public class MagellanJob {
         return ByteString.copyFromUtf8(json.toString());
     }
 
+    /**
+     * For every new task created, this function is called to determine its starting location. It uses
+     * an acceptance probability to decide whether or not the new task should start at the current best
+     * location or at a random location
+     *
+     * The acceptance probability to use here will simply be e^(h(A)/T) where A is the current best location
+     * and h(a) is the current best energy. We will choose the current best location as the starting location
+     * of the next task if  exponent < Random number between 0 and 1.
+     *
+     * If the temperature of the job is still hight, then there will be a greater tendence for the task to start
+     * at a random location. As the temeprature decreases, more of the new tasks will start their search at the
+     * current best location.
+     * @param taskId
+     * @return
+     */
     private ByteString pickNewTaskData(String taskId){
-        // The acceptance probability to use here will simply be e^(h(A)/T) where A is the current best location
-        // and h(a) is the current best energy. We will choose the current best location as the starting location
-        // of the next task if the exponent < Random number
         String location;
         if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
             System.out.println("[" + jobID + "] Picked current best location");
@@ -161,7 +226,7 @@ public class MagellanJob {
             System.out.println("[" + jobID + "] Picked random location");
             location = "null";
         }
-
+        // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
         return packTaskData(jobTemp, location, taskId);
     }
 
