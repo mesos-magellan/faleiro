@@ -20,14 +20,14 @@ public class Web {
         Spark.post("/api/job", Web::createJob);
         Spark.put("/api/job/*/status", Web::updateJobStatus);
         Spark.patch("/api/job/*", Web::modifyJob);
-        Spark.delete("/api/job", Web::destroyJob);
         Spark.get("/api/jobs", Web::getJobList);
         Spark.get("/api/job/*", Web::getJob);
         Spark.get("/api/job/*/tasks", Web::getJobTaskList);
         Spark.get("/api/job/*/task/*", Web::getJobTask);
     }
 
-    /** POST /api/job
+    /**
+     * POST /api/job
      *
      * Request:
      * {
@@ -52,7 +52,8 @@ public class Web {
      * Response(500):
      * {
      *     message : String
-     * }*/
+     * }
+     */
     private static String createJob(Request req, Response res) {
         res.type("application/json");
         JSONObject jsonReq = new JSONObject(req.body());
@@ -83,22 +84,25 @@ public class Web {
         return jsonRes.toString();
     }
 
-    /** PUT /api/job/{job_id}/status
+    /**
+     * PUT /api/job/{job_id}/status
      *
      * Request:
      * {
-     *
+     *     status : ENUM("start", "pause", "stop")
      * }
+     *
+     * Response(200)
+     *
      */
     private static String updateJobStatus(Request req, Response res) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * PATCH /api/job/*
+     */
     private static String modifyJob(Request req, Response res) {
-        throw new UnsupportedOperationException();
-    }
-
-    private static String destroyJob(Request req, Response res) {
         throw new UnsupportedOperationException();
     }
 
