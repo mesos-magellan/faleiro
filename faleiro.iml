@@ -45,5 +45,6 @@
     <orderEntry type="library" name="Maven: jline:jline:0.9.94" level="project" />
     <orderEntry type="library" name="Maven: junit:junit:3.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.netty:netty:3.2.2.Final" level="project" />
+    <orderEntry type="library" name="Maven: org.json:json:20150729" level="project" />
   </component>
 </module>

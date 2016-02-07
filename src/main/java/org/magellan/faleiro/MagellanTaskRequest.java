@@ -1,5 +1,6 @@
 package org.magellan.faleiro;
 
+import com.google.protobuf.ByteString;
 import com.netflix.fenzo.ConstraintEvaluator;
 import com.netflix.fenzo.TaskRequest;
 import com.netflix.fenzo.VMTaskFitnessCalculator;
@@ -8,23 +9,23 @@ import java.util.List;
 
 public class MagellanTaskRequest implements TaskRequest {
 
-    int m_id;
+    String m_id;
     String m_name;
     double m_cpus;
     double m_netMbps;
     double m_disk;
     int m_ports;
     double m_mem;
-    byte[] m_data;
+    ByteString m_data;
 
-    MagellanTaskRequest(int id,
+    MagellanTaskRequest(String  id,
                         String name,
                         double cpus,
                         double mem,
                         double netMbps,
                         double disk,
                         int ports,
-                        byte[] data)
+                        ByteString data)
     {
         this.m_id = id;
         m_name = name;
@@ -35,9 +36,12 @@ public class MagellanTaskRequest implements TaskRequest {
         m_ports = ports;
         m_data = data;
     }
+
+    public ByteString getData() { return m_data; };
+
     @Override
     public String getId() {
-        return Integer.toString(m_id);
+        return m_id;
     }
 
     @Override

@@ -8,6 +8,7 @@ import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
+import org.json.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -46,6 +47,7 @@ public class MagellanFramework {
                 case TASK_LOST:
                 case TASK_FINISHED:
                     // TODO: Parse data from executor to figure out result of the SA to determine starting point of next task
+                    
                     //Notify Fenzo that the task has completed and is no longer assigned
                     fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
                     break;
@@ -79,8 +81,8 @@ public class MagellanFramework {
     private final AtomicBoolean isFrameworkShutdown = new AtomicBoolean(false);
     private final ConcurrentHashMap<Long, MagellanJob> jobsList = new ConcurrentHashMap<>();
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
-    private final Map<String, TaskRequest> pendingTasksMap = new HashMap<>();
-    private final BlockingQueue<TaskRequest> taskQueue = new LinkedBlockingQueue<TaskRequest>();
+    private final Map<String, MagellanTaskRequest> pendingTasksMap = new HashMap<>();
+    private final BlockingQueue<MagellanTaskRequest> taskQueue = new LinkedBlockingQueue<MagellanTaskRequest>();
 
     private  long numCreatedJobs = 0;
     private final Map<String, String> launchedTasks = new HashMap<>();
@@ -158,11 +160,14 @@ public class MagellanFramework {
         }).start();
     }
 
-    public long createJob(int startingTemp, double startingCoolingRate) {
+    public long createJob(int startingTemp, String name, double startingCoolingRate, int iterationsPerTemp) {
         long id = numCreatedJobs++;
-        MagellanJob j = new MagellanJob(id, startingTemp, startingCoolingRate);
+        MagellanJob j = new MagellanJob(id, name, startingTemp, startingCoolingRate,iterationsPerTemp);
         jobsList.put(id, j);
-        j.start();
+
+        new Thread(() -> {
+            j.start();
+        }).start();
 
         return id;
     }
@@ -219,8 +224,8 @@ public class MagellanFramework {
                 Map.Entry pair = (Map.Entry)it.next();
                 MagellanJob j = (MagellanJob) pair.getValue();
                 if(j.getStatus() == MagellanJob.JobState.RUNNING){
-                    ArrayList<TaskRequest> pending = j.getPendingTasks();
-                    for(TaskRequest request : pending){
+                    ArrayList<MagellanTaskRequest> pending = j.getPendingTasks();
+                    for(MagellanTaskRequest request : pending){
                         pendingTasksMap.put(request.getId(),request);
                     }
                 }
