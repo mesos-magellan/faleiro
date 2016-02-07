@@ -163,7 +163,7 @@ public class MagellanFramework {
         }).start();
     }
 
-    public long createJob(int startingTemp, String name, double startingCoolingRate, int iterationsPerTemp) {
+    public long createJob(String name, int startingTemp, double startingCoolingRate, int iterationsPerTemp) {
         long id = numCreatedJobs++;
         MagellanJob j = new MagellanJob(id, name, startingTemp, startingCoolingRate,iterationsPerTemp);
         jobsList.put(id, j);

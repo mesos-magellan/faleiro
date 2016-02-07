@@ -7,6 +7,7 @@
 *.jar
 *.war
 *.ear
+target/*
 
 # IntelliJ #
 .idea/*
