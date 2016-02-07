@@ -104,8 +104,8 @@ public class MagellanFramework {
         Scheduler mesosScheduler = new MagellanScheduler();
 
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-                .setUser(System.getenv("FRAMEWORK_USER")) //Have Mesos fill in current user
-                .setName("Number Search Framework")
+                .setUser(System.getenv("FRAMEWORK_USER"))
+                .setName("Simulated Annealing Scheduler")
                 .setPrincipal(System.getenv("PRINCIPAL"));
 
 
@@ -135,7 +135,7 @@ public class MagellanFramework {
                     true,
                     credentialBuilder.build());
         } else {
-            frameworkBuilder.setPrincipal("java-number_scheduler");
+            frameworkBuilder.setPrincipal("simulated annealing scheduler");
             mesosSchedulerDriver = new MesosSchedulerDriver(
                     mesosScheduler,
                     frameworkBuilder.build(),

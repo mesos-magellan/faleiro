@@ -7,7 +7,9 @@ import spark.Spark;
 public class Web {
 
     public static void main(String[] args) {
-        initWebRoutes();
+        MagellanFramework mf = new MagellanFramework("127.0.1.1:5050");
+        mf.startFramework();
+        //initWebRoutes();
     }
 
     private static void initWebRoutes() {
