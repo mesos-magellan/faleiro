@@ -18,12 +18,12 @@ public class Web {
 
     private static void initWebRoutes() {
         Spark.post("/api/job", Web::createJob);
-        Spark.put("/api/job/*/status", Web::updateJobStatus);
-        Spark.patch("/api/job/*", Web::modifyJob);
+        Spark.put("/api/job/:job_id/status", Web::updateJobStatus);
+        Spark.patch("/api/job/:job_id", Web::modifyJob);
         Spark.get("/api/jobs", Web::getJobList);
-        Spark.get("/api/job/*", Web::getJob);
-        Spark.get("/api/job/*/tasks", Web::getJobTaskList);
-        Spark.get("/api/job/*/task/*", Web::getJobTask);
+        Spark.get("/api/job/:job_id", Web::getJob);
+        Spark.get("/api/job/:job_id/tasks", Web::getJobTaskList);
+        Spark.get("/api/job/:job_id/task/:task_id", Web::getJobTask);
     }
 
     /**
@@ -74,7 +74,7 @@ public class Web {
         Integer iterationsPerTemp = jsonReq.getInt("iterations_per_temp");
         Double initCoolingRate = jsonReq.getDouble("init_cooling_rate");
 
-        long jobId = framework.createJob(jobName, initTemp, initCoolingRate, iterationsPerTemp);
+        Long jobId = framework.createJob(jobName, initTemp, initCoolingRate, iterationsPerTemp);
         if(jobId < 0) {
             res.status(500);
             jsonRes.put("message", "Failed to create job");
@@ -89,14 +89,47 @@ public class Web {
      *
      * Request:
      * {
-     *     status : ENUM("start", "pause", "stop")
+     *     status : ENUM("resume", "pause", "stop")
      * }
      *
      * Response(200)
-     *
+     * // Missing or Invalid parameter
+     * Response(422):
+     * {
+     *     message : String
+     * }
      */
     private static String updateJobStatus(Request req, Response res) {
-        throw new UnsupportedOperationException();
+        res.type("application/json");
+        JSONObject jsonReq = new JSONObject(req.body());
+        JSONObject jsonRes = new JSONObject();
+        if(jsonReq.isNull("status") || !req.params().containsKey(":job_id")) {
+            res.status(422);
+            jsonRes.put("message", "A parameter is missing");
+            return jsonRes.toString();
+        }
+
+        String status = jsonReq.getString("status");
+        Long jobId = Long.parseLong(req.params(":job_id"));
+
+        switch (status) {
+            case "resume":
+                framework.resumeJob(jobId);
+                break;
+            case "pause":
+                framework.pauseJob(jobId);
+                break;
+            case "stop":
+                framework.stopJob(jobId);
+                break;
+            default:
+                res.status(422);
+                jsonRes.put("message", "Invalid parameter value");
+                return jsonRes.toString();
+        }
+
+        res.status(200);
+        return jsonRes.toString();
     }
 
     /**
@@ -106,18 +139,30 @@ public class Web {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * GET /api/jobs
+     */
     private static String getJobList(Request req, Response res) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * GET /api/job/{job_id}
+     */
     private static String getJob(Request req, Response res) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * GET /api/job/{job_id}/tasks
+     */
     private static String getJobTaskList(Request req, Response res) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * GET /api/job/{job_id}/task/{task_id}
+     */
     private static String getJobTask(Request req, Response res) {
         throw new UnsupportedOperationException();
     }
