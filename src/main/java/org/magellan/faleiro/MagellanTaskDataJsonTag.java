@@ -11,4 +11,5 @@ public class MagellanTaskDataJsonTag {
     public static final String UID = "uid";
     public static final String FITNESS_SCORE = "fitness_score";
     public static final String BEST_LOCATION = "best_location";
+    public static final String JOB_DATA = "job_data";
 }

@@ -85,6 +85,8 @@ public class MagellanJob {
 
     private JobState state = JobState.INIITIALIZED;
 
+    private JSONObject jobAdditionalParam = null;
+
     /**
      *
      * @param id Unique Job id
@@ -95,8 +97,20 @@ public class MagellanJob {
      * @param tTemp Starting temperature of job
      * @param tCoolingRate Cooling rate of task
      * @param tCount Number of iterations per temperature for each task
+     * @param pathToExecutor Absolute path to executor on agent
+     * @param jso Additional Job param
      */
-    public MagellanJob(long id, String jName, double jStartingTemp, double jCoolingRate, int jCount, double tTemp, double tCoolingRate, double tCount, String pathToExecutor){
+    public MagellanJob(long id,
+                       String jName,
+                       double jStartingTemp,
+                       double jCoolingRate,
+                       int jCount,
+                       double tTemp,
+                       double tCoolingRate,
+                       double tCount,
+                       String pathToExecutor,
+                       JSONObject jso)
+    {
         jobID = id;
         jobTemp = jStartingTemp;
         jobCoolingRate = jCoolingRate;
@@ -106,6 +120,7 @@ public class MagellanJob {
         taskCoolingRate = tCoolingRate;
         taskCount = tCount;
         taskExecutor = registerExecutor(pathToExecutor);
+        jobAdditionalParam = jso;
     }
 
     public Protos.ExecutorInfo registerExecutor(String pathToExecutor){
@@ -149,6 +164,8 @@ public class MagellanJob {
     public double getTaskCoolingRate(){ return taskCoolingRate; }
 
     public double getTaskCount(){ return taskCount; }
+
+    public JSONObject getJobAdditionalParam(){ return jobAdditionalParam; }
 
     public String getBestLocation() { return jobCurrentBestSolution; }
 
@@ -200,7 +217,7 @@ public class MagellanJob {
                     String newTaskId = "" + jobID + (numTasksSent+1);
 
                     // Choose the magellan specific parameters for the new task
-                    ByteString data = pickNewTaskStartingLocation(taskTemp, taskCoolingRate, taskCount, newTaskId);
+                    ByteString data = pickNewTaskStartingLocation(taskTemp, taskCoolingRate, taskCount, newTaskId, jobAdditionalParam);
                     // Create a task request object with parameters that fenzo will be looking for when
                     // pairing mesos resource offers with magellan tasks.
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
@@ -299,12 +316,13 @@ public class MagellanJob {
      * @param id - ID of the task
      * @return
      */
-    private ByteString packTaskData(double temp, double coolingRate, double count, String location, String id){
+    private ByteString packTaskData(double temp, double coolingRate, double count, String location, String id, JSONObject job_data){
         JSONObject json = new JSONObject();
         json.put(MagellanTaskDataJsonTag.UID, id);
         json.put(MagellanTaskDataJsonTag.TEMPERATURE, temp);
         json.put(MagellanTaskDataJsonTag.COOLING_RATE, coolingRate);
         json.put(MagellanTaskDataJsonTag.COUNT, count);
+        json.put(MagellanTaskDataJsonTag.JOB_DATA, job_data);
         // If location is null, then we want the task to start at a random value.
         if(location!=null) {
             json.put(MagellanTaskDataJsonTag.LOCATION, location);
@@ -327,10 +345,10 @@ public class MagellanJob {
      * @param taskId
      * @return
      */
-    private ByteString pickNewTaskStartingLocation(double temp, double coolingRate, double count, String taskId){
+    private ByteString pickNewTaskStartingLocation(double temp, double coolingRate, double count, String taskId, JSONObject job_data){
         String location;
         //if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
-        if(true) {
+        if(true)    {
             System.out.println("[" + jobID + "] Picked current best location");
             location = jobCurrentBestSolution;
         } else {
@@ -338,7 +356,7 @@ public class MagellanJob {
             location = "";
         }
         // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
-        return packTaskData(temp, coolingRate, count, location, taskId);
+        return packTaskData(temp, coolingRate, count, location, taskId, job_data);
     }
 
     enum JobState{

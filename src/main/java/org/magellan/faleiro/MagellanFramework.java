@@ -178,10 +178,28 @@ public class MagellanFramework {
      * @param tCoolingRate Cooling rate of task
      * @param tCount Number of iterations per temperature for each task
      * @param pathToExecutor Path to the executor file on local machine
+     * @param jso Additional job parameters
      */
-    public long createJob(String jName, int jStartingTemp, double jCoolingRate, int jCount, double tTemp, double tCoolingRate, double tCount, String pathToExecutor) {
+    public long createJob(String jName,
+                          int jStartingTemp,
+                          double jCoolingRate,
+                          int jCount,
+                          double tTemp,
+                          double tCoolingRate,
+                          double tCount,
+                          String pathToExecutor,
+                          JSONObject jso) {
         long id = numCreatedJobs++;
-        MagellanJob j = new MagellanJob(id, jName, jStartingTemp, jCoolingRate,jCount, tTemp, tCoolingRate, tCount,pathToExecutor);
+        MagellanJob j = new MagellanJob(id,
+                                        jName,
+                                        jStartingTemp,
+                                        jCoolingRate,
+                                        jCount,
+                                        tTemp,
+                                        tCoolingRate,
+                                        tCount,
+                                        pathToExecutor,
+                                        jso);
         jobsList.put(id, j);
 
         j.start();
