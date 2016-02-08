@@ -62,7 +62,7 @@ public class Web {
                 || jsonReq.isNull("job_init_temp")
                 || jsonReq.isNull("job_init_cooling_rate")
                 || jsonReq.isNull("job_iterations_per_temp")
-                || jsonReq.isNull("task_init_cooling_rate")
+                || jsonReq.isNull("task_init_temp")
                 || jsonReq.isNull("task_init_cooling_rate")
                 || jsonReq.isNull("task_iterations_per_temp")
                 || jsonReq.isNull("executor_path")) {
@@ -72,12 +72,12 @@ public class Web {
         }
 
         String jobName = jsonReq.getString("job_name");
-        Integer jobInitTemp = jsonReq.getInt("init_temp");
-        Integer jobIterationsPerTemp = jsonReq.getInt("iterations_per_temp");
-        Double jobInitCoolingRate = jsonReq.getDouble("init_cooling_rate");
-        Integer taskInitTemp = jsonReq.getInt("init_temp");
-        Integer taskIterationsPerTemp = jsonReq.getInt("iterations_per_temp");
-        Double taskInitCoolingRate = jsonReq.getDouble("init_cooling_rate");
+        Integer jobInitTemp = jsonReq.getInt("job_init_temp");
+        Integer jobIterationsPerTemp = jsonReq.getInt("job_iterations_per_temp");
+        Double jobInitCoolingRate = jsonReq.getDouble("job_init_cooling_rate");
+        Integer taskInitTemp = jsonReq.getInt("task_init_temp");
+        Integer taskIterationsPerTemp = jsonReq.getInt("task_iterations_per_temp");
+        Double taskInitCoolingRate = jsonReq.getDouble("task_init_cooling_rate");
         String executorPath = jsonReq.getString("executor_path");
 
         Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
