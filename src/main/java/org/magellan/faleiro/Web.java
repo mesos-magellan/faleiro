@@ -32,7 +32,7 @@ public class Web {
      *     job_init_temp : int,
      *     job_init_cooling_rate : double,
      *     job_iterations_per_temp : int,
-     *     task_init_cooling_rate : int,
+     *     task_init_temp : int,
      *     task_init_cooling_rate : double,
      *     task_iterations_per_temp : int,
      *     executor_path : String
@@ -167,9 +167,7 @@ public class Web {
      */
     private static String getJobList(Request req, Response res) {
         res.type("application/json");
-        JSONObject jsonRes = new JSONObject();
-
-        return jsonRes.toString();
+        return framework.getAllJobStatuses().toString();
     }
 
     /**
@@ -198,15 +196,14 @@ public class Web {
      */
     private static String getJob(Request req, Response res) {
         res.type("application/json");
-        JSONObject jsonRes = new JSONObject();
         if(!req.params().containsKey(":job_id")) {
+            JSONObject jsonRes = new JSONObject();
             res.status(422);
             jsonRes.put("message", "A parameter is missing");
             return jsonRes.toString();
         }
 
         Long jobId = Long.parseLong(req.params(":job_id"));
-        framework.getJobStatus(jobId);
-        return jsonRes.toString();
+        return framework.getJobStatus(jobId).toString();
     }
 }
