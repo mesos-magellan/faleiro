@@ -62,6 +62,8 @@ public class MagellanJob {
     // The energy of the current best solution
     private double jobBestEnergy = 0;
 
+    private String jobTaskName;
+
     // A list of the best energies found by every task run by this job.
     private ArrayList<Double> energyHistory = new ArrayList<>();
 
@@ -97,7 +99,7 @@ public class MagellanJob {
      * @param tTemp Starting temperature of job
      * @param tCoolingRate Cooling rate of task
      * @param tCount Number of iterations per temperature for each task
-     * @param pathToExecutor Absolute path to executor on agent
+     * @param pathToExecutor Name of the task we want to execute on the executor side
      * @param jso Additional Job param
      */
     public MagellanJob(long id,
@@ -116,10 +118,11 @@ public class MagellanJob {
         jobCoolingRate = jCoolingRate;
         jobIterationsPerTemp = jCount;
         jobName = jName;
+        jobTaskName = pathToExecutor;
         taskTemp = tTemp;
         taskCoolingRate = tCoolingRate;
         taskCount = tCount;
-        taskExecutor = registerExecutor(pathToExecutor);
+        taskExecutor = registerExecutor("/usr/local/bin/enrique");
         jobAdditionalParam = jso;
     }
 
@@ -323,6 +326,7 @@ public class MagellanJob {
         json.put(MagellanTaskDataJsonTag.COOLING_RATE, coolingRate);
         json.put(MagellanTaskDataJsonTag.COUNT, count);
         json.put(MagellanTaskDataJsonTag.JOB_DATA, job_data);
+        json.put(MagellanTaskDataJsonTag.TASK_NAME, jobTaskName);
         // If location is null, then we want the task to start at a random value.
         if(location!=null) {
             json.put(MagellanTaskDataJsonTag.LOCATION, location);
