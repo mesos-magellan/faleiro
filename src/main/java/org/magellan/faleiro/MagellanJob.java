@@ -280,7 +280,8 @@ public class MagellanJob {
     public ArrayList<MagellanTaskRequest> getPendingTasks(){
         ArrayList<MagellanTaskRequest> pt = new ArrayList<>();
         if(numFreeTaskSlotsLeft.get() <= 10) {
-            pendingTasks.drainTo(pt, numFreeTaskSlotsLeft.get());
+            int taken = pendingTasks.drainTo(pt, numFreeTaskSlotsLeft.get());
+            numFreeTaskSlotsLeft.addAndGet(-taken);
         }
         return pt;
     }
