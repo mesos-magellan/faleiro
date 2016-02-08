@@ -100,6 +100,9 @@ public class Web {
      * }
      *
      * Response(200)
+     * {
+     *
+     * }
      * // Missing or Invalid parameter
      * Response(422):
      * {
@@ -192,6 +195,11 @@ public class Web {
      *     energy_history : [
      *          double
      *     ]
+     * }
+     * // Missing or Invalid parameter
+     * Response(422):
+     * {
+     *     message : String
      * }
      */
     private static String getJob(Request req, Response res) {
