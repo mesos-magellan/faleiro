@@ -3,6 +3,8 @@ echo "************************* SETTING ENV VARS ************************* "
 export PRINCIPAL="mesos_master"
 export FRAMEWORK_USER="magellan"
 export MASTER_ADDRESS="10.144.144.10:5050"
+export LIBPROCESS_IP="10.144.144.11"
+export LIBPROCESS_PORT="5055"
 echo "************************* BUILDING WITH MAVEN ************************* "
 mvn package $@
 echo "************************* RUNNING FALEIRO ************************* "
