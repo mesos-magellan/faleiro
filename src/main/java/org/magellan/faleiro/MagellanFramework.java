@@ -342,7 +342,7 @@ public class MagellanFramework {
      * @param jobID
      * @return
      */
-    public JSONObject getJobStatus(int jobID) {
+    public JSONObject getJobStatus(Long jobID) {
         MagellanJob mj = jobsList.get(jobID);
 
         if(mj==null){

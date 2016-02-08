@@ -81,7 +81,7 @@ public class Web {
         String executorPath = jsonReq.getString("executor_path");
 
         Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
-                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp);
+                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp, executorPath);
         if(jobId < 0) {
             res.status(500);
             jsonRes.put("message", "Failed to create job");
@@ -167,8 +167,16 @@ public class Web {
      */
     private static String getJob(Request req, Response res) {
         res.type("application/json");
+        JSONObject jsonReq = new JSONObject(req.body());
         JSONObject jsonRes = new JSONObject();
+        if(!req.params().containsKey(":job_id")) {
+            res.status(422);
+            jsonRes.put("message", "A parameter is missing");
+            return jsonRes.toString();
+        }
 
+        Long jobId = Long.parseLong(req.params(":job_id"));
+        framework.getJobStatus(jobId);
         return jsonRes.toString();
     }
 }
