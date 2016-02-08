@@ -150,7 +150,8 @@ public class MagellanFramework {
             public void run() {
                 mesosSchedulerDriver.run();
             }
-        }.start();                ;
+        }.start();
+        mesosSchedulerDriver.stop();
     }
 
     public void shutdownFramework() {
@@ -225,8 +226,6 @@ public class MagellanFramework {
                 System.out.println("Framework terminated");
                 return;
             }
-
-            System.out.println("#Pending tasks: " + pendingTasksMap.size());
 
             // Clear all the local data structures in preparation of a new loop
             newLeases.clear();

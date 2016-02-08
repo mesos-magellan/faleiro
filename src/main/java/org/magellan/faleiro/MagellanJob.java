@@ -19,7 +19,7 @@ public class MagellanJob {
 
     private final double TEMP_MIN = 0.0001;
     private final double NUM_CPU = 1;
-    private final double NUM_MEM = 128;
+    private final double NUM_MEM = 12;
     private final double NUM_NET_MBPS = 0;
     private final double NUM_DISK = 0;
     private final int NUM_PORTS = 0;
@@ -287,7 +287,7 @@ public class MagellanJob {
             // Set this to zero while we drain our pending tasks so that the main job thread doesn't
             // add new tasks between the time we drain the pendingTasks queue and update this value
             numFreeTaskSlotsLeft.set(0);
-            int taken = pendingTasks.drainTo(pt, numFreeTaskSlotsLeft.get());
+            int taken = pendingTasks.drainTo(pt, value);
             // If we did drain 10 tasks, make the correction
             numFreeTaskSlotsLeft.addAndGet(value-taken);
         }
