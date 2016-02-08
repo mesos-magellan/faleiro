@@ -11,7 +11,7 @@ public class Web {
     private static MagellanFramework framework;
 
     public static void main(String[] args) {
-        framework = new MagellanFramework("127.0.1.1:5050");
+        framework = new MagellanFramework(System.getenv("MASTER_ADDRESS"));
         framework.startFramework();
         initWebRoutes();
     }
@@ -148,7 +148,21 @@ public class Web {
      *
      * Response(200):
      * {
-     *
+     *  [
+     *     job_id : int,
+     *     job_name : String,
+     *     job_starting_temp : int,
+     *     job_cooling_rate : double,
+     *     job_count : int,
+     *     task_starting_temp : int,
+     *     task_cooling_rate : double,
+     *     task_count : int,
+     *     best_location : String,
+     *     best_energy : double,
+     *     energy_history : [
+     *          double
+     *     ]
+     *  ]
      * }
      */
     private static String getJobList(Request req, Response res) {
@@ -164,10 +178,26 @@ public class Web {
      * Request:
      * {
      * }
+     *
+     * Response(200):
+     * {
+     *     job_id : int,
+     *     job_name : String,
+     *     job_starting_temp : int,
+     *     job_cooling_rate : double,
+     *     job_count : int,
+     *     task_starting_temp : int,
+     *     task_cooling_rate : double,
+     *     task_count : int,
+     *     best_location : String,
+     *     best_energy : double,
+     *     energy_history : [
+     *          double
+     *     ]
+     * }
      */
     private static String getJob(Request req, Response res) {
         res.type("application/json");
-        JSONObject jsonReq = new JSONObject(req.body());
         JSONObject jsonRes = new JSONObject();
         if(!req.params().containsKey(":job_id")) {
             res.status(422);
