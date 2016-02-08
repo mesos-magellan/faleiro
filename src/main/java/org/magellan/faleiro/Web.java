@@ -36,6 +36,7 @@ public class Web {
      *     task_init_cooling_rate : double,
      *     task_iterations_per_temp : int,
      *     executor_path : String
+     *     job_data : JSONObject
      * }
      *
      * // Job successfully created
@@ -79,9 +80,10 @@ public class Web {
         Integer taskIterationsPerTemp = jsonReq.getInt("task_iterations_per_temp");
         Double taskInitCoolingRate = jsonReq.getDouble("task_init_cooling_rate");
         String executorPath = jsonReq.getString("executor_path");
+        JSONObject jobData = jsonReq.isNull("job_data") ? new JSONObject() : jsonReq.getJSONObject("job_data");
 
         Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
-                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp, executorPath);
+                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp, executorPath, jobData);
         if(jobId < 0) {
             res.status(500);
             jsonRes.put("message", "Failed to create job");
