@@ -254,7 +254,7 @@ public class MagellanFramework {
 
             // Pass our list of pending tasks as well as current resource offers to Fenzo and receive a mapping between the two
             SchedulingResult schedulingResult = fenzoScheduler.scheduleOnce(new ArrayList<>(pendingTasksMap.values()), newLeases);
-            System.out.println("result=" + schedulingResult);
+            //System.out.println("result=" + schedulingResult);
 
             // Now use the mesos driver to schedule the tasks
             Map<String,VMAssignmentResult> resultMap = schedulingResult.getResultMap();

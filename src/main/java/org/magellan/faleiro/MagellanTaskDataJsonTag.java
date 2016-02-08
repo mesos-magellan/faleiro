@@ -6,7 +6,7 @@ package org.magellan.faleiro;
 public class MagellanTaskDataJsonTag {
     public static final String COOLING_RATE = "cooling_rate";
     public static final String TEMPERATURE = "temperature";
-    public static final String COUNT = "count";
+    public static final String COUNT = "num_mutations";
     public static final String LOCATION = "location";
     public static final String UID = "uid";
     public static final String FITNESS_SCORE = "fitness_score";

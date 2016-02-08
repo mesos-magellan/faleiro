@@ -109,12 +109,12 @@ public class MagellanJob {
     }
 
     public Protos.ExecutorInfo registerExecutor(String pathToExecutor){
-        String uri = "/home/vagrant/" + pathToExecutor;
-        System.out.println("Uri for executor is " + uri);
+        //String uri = "/home/vagrant/" + pathToExecutor;
+        System.out.println("Uri for executor is " + pathToExecutor);
 
         Protos.ExecutorInfo executor = Protos.ExecutorInfo.newBuilder()
                 .setExecutorId(Protos.ExecutorID.newBuilder().setValue("default"))
-                .setCommand(Protos.CommandInfo.newBuilder().setValue(uri))
+                .setCommand(Protos.CommandInfo.newBuilder().setValue(pathToExecutor))
                 .setName("SA Job Executor")
                 .setSource("java_test")
                 .build();
@@ -329,12 +329,13 @@ public class MagellanJob {
      */
     private ByteString pickNewTaskStartingLocation(double temp, double coolingRate, double count, String taskId){
         String location;
-        if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
+        //if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
+        if(true) {
             System.out.println("[" + jobID + "] Picked current best location");
             location = jobCurrentBestSolution;
         } else {
             System.out.println("[" + jobID + "] Picked random location");
-            location = null;
+            location = "";
         }
         // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
         return packTaskData(temp, coolingRate, count, location, taskId);
