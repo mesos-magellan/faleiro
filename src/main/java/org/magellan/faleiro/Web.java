@@ -62,7 +62,7 @@ public class Web {
                 || jsonReq.isNull("job_init_temp")
                 || jsonReq.isNull("job_init_cooling_rate")
                 || jsonReq.isNull("job_iterations_per_temp")
-                || jsonReq.isNull("task_init_cooling_rate")
+                || jsonReq.isNull("task_init_temp")
                 || jsonReq.isNull("task_init_cooling_rate")
                 || jsonReq.isNull("task_iterations_per_temp")
                 || jsonReq.isNull("executor_path")) {
