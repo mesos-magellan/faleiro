@@ -188,7 +188,10 @@ public class MagellanJob {
         while (jobTemp >= TEMP_MIN) {
             int i = 0;
             while(i < jobIterationsPerTemp) {
-                while(state!=JobState.RUNNING){
+                if(state == JobState.STOP) {
+                    return;
+                }
+                while(state==JobState.PAUSED){
                     // Waste cycles while job is paused
                 }
                 i++;
@@ -246,17 +249,14 @@ public class MagellanJob {
 
     public void stop() {
         state = JobState.STOP;
-        throw new UnsupportedOperationException();
     }
 
     public void pause() {
         state = JobState.PAUSED;
-        throw new UnsupportedOperationException();
     }
 
     public void resume(){
         state = JobState.RUNNING;
-        throw new UnsupportedOperationException();
     }
 
     /**
