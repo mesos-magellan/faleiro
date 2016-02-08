@@ -5,9 +5,11 @@ import com.netflix.fenzo.TaskRequest;
 import jdk.nashorn.api.scripting.JSObject;
 import org.json.JSONObject;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.DoubleAccumulator;
 
 public class MagellanJob {
 
@@ -56,9 +58,8 @@ public class MagellanJob {
     // The energy of the current best solution
     private double jobBestEnergy = 0;
 
-    // The data from finished tasks are passed from the MagellanFramework and submitted into this queue
-    // which can be queried whenever the current job is available to process the responses.
-    private BlockingQueue<ByteString> receivedMessages = new LinkedBlockingQueue<>();
+    // A list of the best energies found by every task run by this job.
+    private ArrayList<Double> energyHistory = new ArrayList<>();
 
     // This list stores tasks that are ready to be scheduled. This list is then consumed by the
     // MagellanFramework when it is ready to accept new tasks.
@@ -110,6 +111,25 @@ public class MagellanJob {
     public String getJobName() {
         return jobName;
     }
+
+    public double getJobStartingTemp(){ return jobTemp;}
+
+    public double getJobCoolingRate(){ return jobCoolingRate; }
+
+    public double getJobCount(){ return jobIterationsPerTemp; }
+
+    public double getTaskStartingTemp() {return taskTemp; }
+
+    public double getTaskCoolingRate(){ return taskCoolingRate; }
+
+    public double getTaskCount(){ return taskCount; }
+
+    public String getBestLocation() { return jobCurrentBestSolution; }
+
+    public double getBestEnergy() { return jobBestEnergy; }
+
+    public ArrayList<Double> getEnergyHistory() { return energyHistory; }
+
 
     /**
      * Starts the main thread of the job in a separate thread thread.
@@ -181,6 +201,7 @@ public class MagellanJob {
         double fitness_score = (double) js.get(MagellanTaskDataJsonTag.FITNESS_SCORE);
         String best_location = (String) js.get(MagellanTaskDataJsonTag.BEST_LOCATION);
 
+        energyHistory.add(jobBestEnergy);
         // If a better score was discovered, make this our global, best location
         if(fitness_score > jobBestEnergy) {
             jobCurrentBestSolution = best_location;

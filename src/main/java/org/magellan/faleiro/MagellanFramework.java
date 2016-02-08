@@ -333,4 +333,31 @@ public class MagellanFramework {
         return (String) o.get(MagellanTaskDataJsonTag.UID);
     }
 
+    /**
+     * Reuturns state of a job as a jsonobject
+     * @param jobID
+     * @return
+     */
+    public JSONObject getJobStatus(int jobID) {
+        MagellanJob mj = jobsList.get(jobID);
+
+        if(mj==null){
+            return null;
+        }
+
+        JSONObject jsonObj = new JSONObject();
+        jsonObj.put("job_id", mj.getJobID());
+        jsonObj.put("job_name", mj.getJobName());
+        jsonObj.put("job_starting_temp", mj.getJobStartingTemp());
+        jsonObj.put("job_cooling_rate", mj.getJobCoolingRate());
+        jsonObj.put("job_count", mj.getJobCount());
+        jsonObj.put("task_starting_temp", mj.getTaskStartingTemp());
+        jsonObj.put("task_cooling_rate", mj.getTaskCoolingRate());
+        jsonObj.put("task_count", mj.getTaskCount());
+        jsonObj.put("best_location", mj.getBestLocation());
+        jsonObj.put("best_energy", mj.getBestEnergy());
+        jsonObj.put("energy_history", mj.getEnergyHistory());
+        return jsonObj;
+    }
+
 }
