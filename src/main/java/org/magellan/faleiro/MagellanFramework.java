@@ -221,8 +221,10 @@ public class MagellanFramework {
 
         while(true) {
             // Only if the framework has shutdown do we exist our main loop
-            if(isFrameworkShutdown.get())
+            if(isFrameworkShutdown.get()) {
+                System.out.println("Framework terminated");
                 return;
+            }
 
             System.out.println("#Pending tasks: " + pendingTasksMap.size());
 
@@ -288,7 +290,7 @@ public class MagellanFramework {
                 }
             }
             // TODO: Posibly remove/increase this?
-            try{Thread.sleep(1000);}catch(InterruptedException ie){}
+            try{Thread.sleep(100);}catch(InterruptedException ie){}
         }
     }
 
