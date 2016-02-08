@@ -12,6 +12,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.DoubleAccumulator;
 
 public class MagellanJob {
@@ -73,6 +74,9 @@ public class MagellanJob {
     private int numTasksSent = 0;
 
     private int numFinishedTasks = 0;
+
+    // Number of tasks that have been sent out but have not finished yet
+    private AtomicInteger numFreeTaskSlotsLeft = new AtomicInteger(10);
 
     // Main thread which creates new tasks.
     private Thread jobThread;
@@ -238,6 +242,7 @@ public class MagellanJob {
         double fitness_score = (double) js.get(MagellanTaskDataJsonTag.FITNESS_SCORE);
         String best_location = (String) js.get(MagellanTaskDataJsonTag.BEST_LOCATION);
 
+        numFreeTaskSlotsLeft.getAndIncrement();
         numFinishedTasks++;
         energyHistory.add(jobBestEnergy);
         // If a better score was discovered, make this our global, best location
@@ -274,7 +279,9 @@ public class MagellanJob {
      */
     public ArrayList<MagellanTaskRequest> getPendingTasks(){
         ArrayList<MagellanTaskRequest> pt = new ArrayList<>();
-        pendingTasks.drainTo(pt);
+        if(numFreeTaskSlotsLeft.get() <= 10) {
+            pendingTasks.drainTo(pt, numFreeTaskSlotsLeft.get());
+        }
         return pt;
     }
 
