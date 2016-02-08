@@ -195,14 +195,15 @@ public class MagellanJob {
                 if(state == JobState.STOP) {
                     return;
                 }
-                while(state==JobState.PAUSED){
-                    // Waste cycles while job is paused
+                while(state==JobState.PAUSED || numFreeTaskSlotsLeft.get() == 0 ){
+                    // Waste cycles while job is paused or if we have reached our cap
+                    // of availble slots for tasks for this job.
                 }
                 i++;
                 try {
                     // To keep the task ids unique throughout the global job space, use the job ID to
                     // ensure uniqueness
-                    String newTaskId = "" + jobID + (++numTasksSent);
+                    String newTaskId = "" + jobID + (numTasksSent+1);
 
                     // Choose the magellan specific parameters for the new task
                     ByteString data = pickNewTaskStartingLocation(taskTemp, taskCoolingRate, taskCount, newTaskId);
@@ -221,6 +222,7 @@ public class MagellanJob {
                     // Add the task to the pending queue which will be serviced by the magellan framework
                     // when it is ready.
                     pendingTasks.put(newTask);
+                    numTasksSent++;
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -280,8 +282,14 @@ public class MagellanJob {
     public ArrayList<MagellanTaskRequest> getPendingTasks(){
         ArrayList<MagellanTaskRequest> pt = new ArrayList<>();
         if(numFreeTaskSlotsLeft.get() <= 10) {
+            // Get the current value
+            int value = numFreeTaskSlotsLeft.get();
+            // Set this to zero while we drain our pending tasks so that the main job thread doesn't
+            // add new tasks between the time we drain the pendingTasks queue and update this value
+            numFreeTaskSlotsLeft.set(0);
             int taken = pendingTasks.drainTo(pt, numFreeTaskSlotsLeft.get());
-            numFreeTaskSlotsLeft.addAndGet(-taken);
+            // If we did drain 10 tasks, make the correction
+            numFreeTaskSlotsLeft.addAndGet(value-taken);
         }
         return pt;
     }
