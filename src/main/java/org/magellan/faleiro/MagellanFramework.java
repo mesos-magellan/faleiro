@@ -163,9 +163,19 @@ public class MagellanFramework {
         }).start();
     }
 
-    public long createJob(String name, int startingTemp, double startingCoolingRate, int iterationsPerTemp) {
+    /**
+     *
+     * @param jName Name of job
+     * @param jStartingTemp Starting temperature of job. Higher means job runs for longer
+     * @param jCoolingRate Rate at which temperature depreciates each time
+     * @param jCount number of iterations per temperature for job
+     * @param tTemp Starting temperature of job
+     * @param tCoolingRate Cooling rate of task
+     * @param tCount Number of iterations per temperature for each task
+     */
+    public long createJob(String jName, int jStartingTemp, double jCoolingRate, int jCount, double tTemp, double tCoolingRate, double tCount) {
         long id = numCreatedJobs++;
-        MagellanJob j = new MagellanJob(id, name, startingTemp, startingCoolingRate,iterationsPerTemp);
+        MagellanJob j = new MagellanJob(id, jName, jStartingTemp, jCoolingRate,jCount, tTemp, tCoolingRate, tCount);
         jobsList.put(id, j);
 
         j.start();
