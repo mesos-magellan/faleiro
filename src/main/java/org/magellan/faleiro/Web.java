@@ -32,7 +32,7 @@ public class Web {
      *     job_init_temp : int,
      *     job_init_cooling_rate : double,
      *     job_iterations_per_temp : int,
-     *     task_init_cooling_rate : int,
+     *     task_init_temp : int,
      *     task_init_cooling_rate : double,
      *     task_iterations_per_temp : int,
      *     executor_path : String
