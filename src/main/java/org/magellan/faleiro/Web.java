@@ -66,7 +66,7 @@ public class Web {
                 || jsonReq.isNull("task_init_temp")
                 || jsonReq.isNull("task_init_cooling_rate")
                 || jsonReq.isNull("task_iterations_per_temp")
-                || jsonReq.isNull("executor_path")) {
+                || jsonReq.isNull("task_name")) {
             res.status(422);
             jsonRes.put("message", "A parameter is missing");
             return jsonRes.toString();
@@ -79,11 +79,11 @@ public class Web {
         Integer taskInitTemp = jsonReq.getInt("task_init_temp");
         Integer taskIterationsPerTemp = jsonReq.getInt("task_iterations_per_temp");
         Double taskInitCoolingRate = jsonReq.getDouble("task_init_cooling_rate");
-        String executorPath = jsonReq.getString("executor_path");
+        String taskName = jsonReq.getString("task_name");
         JSONObject jobData = jsonReq.isNull("job_data") ? new JSONObject() : jsonReq.getJSONObject("job_data");
 
         Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
-                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp, executorPath, jobData);
+                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp, taskName, jobData);
         if(jobId < 0) {
             res.status(500);
             jsonRes.put("message", "Failed to create job");
