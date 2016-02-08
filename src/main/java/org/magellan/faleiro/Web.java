@@ -32,10 +32,8 @@ public class Web {
      *     job_init_temp : int,
      *     job_init_cooling_rate : double,
      *     job_iterations_per_temp : int,
-     *     task_init_temp : int,
-     *     task_init_cooling_rate : double,
-     *     task_iterations_per_temp : int,
-     *     executor_path : String
+     *     task_time : int,
+     *     task_name : String
      *     job_data : JSONObject
      * }
      *
@@ -63,9 +61,7 @@ public class Web {
                 || jsonReq.isNull("job_init_temp")
                 || jsonReq.isNull("job_init_cooling_rate")
                 || jsonReq.isNull("job_iterations_per_temp")
-                || jsonReq.isNull("task_init_temp")
-                || jsonReq.isNull("task_init_cooling_rate")
-                || jsonReq.isNull("task_iterations_per_temp")
+                || jsonReq.isNull("task_time")
                 || jsonReq.isNull("task_name")) {
             res.status(422);
             jsonRes.put("message", "A parameter is missing");
@@ -76,14 +72,12 @@ public class Web {
         Integer jobInitTemp = jsonReq.getInt("job_init_temp");
         Integer jobIterationsPerTemp = jsonReq.getInt("job_iterations_per_temp");
         Double jobInitCoolingRate = jsonReq.getDouble("job_init_cooling_rate");
-        Integer taskInitTemp = jsonReq.getInt("task_init_temp");
-        Integer taskIterationsPerTemp = jsonReq.getInt("task_iterations_per_temp");
-        Double taskInitCoolingRate = jsonReq.getDouble("task_init_cooling_rate");
+        Integer taskTime = jsonReq.getInt("task_time");
         String taskName = jsonReq.getString("task_name");
         JSONObject jobData = jsonReq.isNull("job_data") ? new JSONObject() : jsonReq.getJSONObject("job_data");
 
         Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
-                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp, taskName, jobData);
+                , taskTime, taskName, jobData);
         if(jobId < 0) {
             res.status(500);
             jsonRes.put("message", "Failed to create job");
