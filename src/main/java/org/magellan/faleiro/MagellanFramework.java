@@ -50,6 +50,7 @@ public class MagellanFramework {
                     String taskID = recoverTaskId(taskStatus.getData());
                     jobsList.get(submittedTaskIdsToJobIds.get(taskID)).processIncomingMessages(taskStatus.getData());
                     submittedTaskIdsToJobIds.remove(taskID);
+                    taskIdsToTaskData.remove(taskID);
 
                     //Notify Fenzo that the task has completed and is no longer assigned
                     fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
@@ -86,6 +87,7 @@ public class MagellanFramework {
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
     private final Map<String, MagellanTaskRequest> pendingTasksMap = new HashMap<>();
     private final HashMap<String, Long> submittedTaskIdsToJobIds = new HashMap<>();
+    private final HashMap<String, ByteString> taskIdsToTaskData = new HashMap<>();
 
     private  long numCreatedJobs = 0;
     private final Map<String, String> launchedTasks = new HashMap<>();
@@ -172,10 +174,11 @@ public class MagellanFramework {
      * @param tTemp Starting temperature of job
      * @param tCoolingRate Cooling rate of task
      * @param tCount Number of iterations per temperature for each task
+     * @param pathToExecutor Path to the executor file on local machine
      */
-    public long createJob(String jName, int jStartingTemp, double jCoolingRate, int jCount, double tTemp, double tCoolingRate, double tCount) {
+    public long createJob(String jName, int jStartingTemp, double jCoolingRate, int jCount, double tTemp, double tCoolingRate, double tCount, String pathToExecutor) {
         long id = numCreatedJobs++;
-        MagellanJob j = new MagellanJob(id, jName, jStartingTemp, jCoolingRate,jCount, tTemp, tCoolingRate, tCount);
+        MagellanJob j = new MagellanJob(id, jName, jStartingTemp, jCoolingRate,jCount, tTemp, tCoolingRate, tCount,pathToExecutor);
         jobsList.put(id, j);
 
         j.start();
@@ -239,6 +242,7 @@ public class MagellanFramework {
                     for(MagellanTaskRequest request : pending){
                         pendingTasksMap.put(request.getId(),request);
                         submittedTaskIdsToJobIds.put(request.getId(),j.getJobID());
+                        taskIdsToTaskData.put(request.getId(), request.getData());
                     }
                 }
             }
@@ -266,7 +270,7 @@ public class MagellanFramework {
                     // the mesos driver for scheduling
                     for(TaskAssignmentResult t: result.getTasksAssigned()) {
                         stringBuilder.append(t.getTaskId()).append(", ");
-                        taskInfos.add(getTaskInfo(slaveId, t.getTaskId(), ""));
+                        taskInfos.add(getTaskInfo(slaveId, t.getTaskId()));
                         // remove task from pending tasks map and put into launched tasks map
                         pendingTasksMap.remove(t.getTaskId());
                         launchedTasks.put(t.getTaskId(), leasesUsed.get(0).hostname());
@@ -297,8 +301,8 @@ public class MagellanFramework {
      * @param data
      * @return
      */
-    private Protos.TaskInfo getTaskInfo(Protos.SlaveID slaveID, final String taskId, String data) {
-        /*
+    private Protos.TaskInfo getTaskInfo(Protos.SlaveID slaveID, final String taskId) {
+
         Protos.TaskID pTaskId = Protos.TaskID.newBuilder()
                 .setValue(taskId).build();
         return Protos.TaskInfo.newBuilder()
@@ -313,14 +317,14 @@ public class MagellanFramework {
                         .setName("mem")
                         .setType(Protos.Value.Type.SCALAR)
                         .setScalar(Protos.Value.Scalar.newBuilder().setValue(128)))
+                .setData((ByteString)taskIdsToTaskData.get(taskId))
+                .setExecutor(Protos.ExecutorInfo.newBuilder(getExecutor(taskId)))
                 .build();
 
                 // The functions below could be useful for this.
                 //.setData(ByteString.copyFromUtf8(data))
                 //.setCommand(Protos.CommandInfo.newBuilder().setValue(taskCmdGetter.call(taskId)).build())
-                //.setExecutor(ExecutorInfo.newBuilder(mExecutor))
-        */
-        throw new UnsupportedOperationException();
+                //.setExecutor(ExecutorInfo.newBuilderExecutor))
     }
 
     /**
@@ -358,6 +362,16 @@ public class MagellanFramework {
         jsonObj.put("best_energy", mj.getBestEnergy());
         jsonObj.put("energy_history", mj.getEnergyHistory());
         return jsonObj;
+    }
+
+    /**
+     * Given a taskID, get a execturo instance
+     * @param taskID
+     * @return
+     */
+    private Protos.ExecutorInfo getExecutor(String taskID){
+        Long jobID = (Long)submittedTaskIdsToJobIds.get(taskID);
+        return ((MagellanJob)jobsList.get(jobID)).getTaskExecutor();
     }
 
 }

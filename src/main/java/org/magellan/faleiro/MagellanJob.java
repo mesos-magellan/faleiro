@@ -3,8 +3,11 @@ package org.magellan.faleiro;
 import com.google.protobuf.ByteString;
 import com.netflix.fenzo.TaskRequest;
 import jdk.nashorn.api.scripting.JSObject;
+import org.apache.mesos.Protos;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
@@ -72,6 +75,8 @@ public class MagellanJob {
     // Main thread which creates new tasks.
     private Thread jobThread;
 
+    private Protos.ExecutorInfo taskExecutor;
+
     private JobState state = JobState.INIITIALIZED;
 
     /**
@@ -85,7 +90,7 @@ public class MagellanJob {
      * @param tCoolingRate Cooling rate of task
      * @param tCount Number of iterations per temperature for each task
      */
-    public MagellanJob(long id, String jName, double jStartingTemp, double jCoolingRate, int jCount, double tTemp, double tCoolingRate, double tCount){
+    public MagellanJob(long id, String jName, double jStartingTemp, double jCoolingRate, int jCount, double tTemp, double tCoolingRate, double tCount, String pathToExecutor){
         jobID = id;
         jobTemp = jStartingTemp;
         jobCoolingRate = jCoolingRate;
@@ -94,6 +99,27 @@ public class MagellanJob {
         taskTemp = tTemp;
         taskCoolingRate = tCoolingRate;
         taskCount = tCount;
+        taskExecutor = registerExecutor(pathToExecutor);
+    }
+
+    public Protos.ExecutorInfo registerExecutor(String pathToExecutor){
+        String uri;
+        try {
+            uri = new File(pathToExecutor).getCanonicalPath();
+        }catch (IOException e){
+            System.err.println(e.getMessage());
+            return null;
+        }
+        System.out.println("Uri for executor is " + uri);
+
+        Protos.ExecutorInfo executor = Protos.ExecutorInfo.newBuilder()
+                .setExecutorId(Protos.ExecutorID.newBuilder().setValue("default"))
+                .setCommand(Protos.CommandInfo.newBuilder().setValue(uri))
+                .setName("SA Job Executor")
+                .setSource("java_test")
+                .build();
+
+        return executor;
     }
 
     /**
@@ -129,6 +155,8 @@ public class MagellanJob {
     public double getBestEnergy() { return jobBestEnergy; }
 
     public ArrayList<Double> getEnergyHistory() { return energyHistory; }
+
+    public Protos.ExecutorInfo getTaskExecutor() { return taskExecutor; }
 
 
     /**
