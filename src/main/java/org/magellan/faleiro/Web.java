@@ -19,11 +19,8 @@ public class Web {
     private static void initWebRoutes() {
         Spark.post("/api/job", Web::createJob);
         Spark.put("/api/job/:job_id/status", Web::updateJobStatus);
-        Spark.patch("/api/job/:job_id", Web::modifyJob);
         Spark.get("/api/jobs", Web::getJobList);
         Spark.get("/api/job/:job_id", Web::getJob);
-        Spark.get("/api/job/:job_id/tasks", Web::getJobTaskList);
-        Spark.get("/api/job/:job_id/task/:task_id", Web::getJobTask);
     }
 
     /**
@@ -32,10 +29,13 @@ public class Web {
      * Request:
      * {
      *     job_name : String,
-     *     init_temp : int,
-     *     init_cooling_rate : double,
-     *     iterations_per_temp : int,
-     *     docker_name : String
+     *     job_init_temp : int,
+     *     job_init_cooling_rate : double,
+     *     job_iterations_per_temp : int,
+     *     task_init_cooling_rate : int,
+     *     task_init_cooling_rate : double,
+     *     task_iterations_per_temp : int,
+     *     executor_path : String
      * }
      *
      * // Job successfully created
@@ -59,22 +59,29 @@ public class Web {
         JSONObject jsonReq = new JSONObject(req.body());
         JSONObject jsonRes = new JSONObject();
         if(jsonReq.isNull("job_name")
-           || jsonReq.isNull("init_temp")
-           || jsonReq.isNull("init_cooling_rate")
-           || jsonReq.isNull("iterations_per_temp")
-           || jsonReq.isNull("docker_name")) {
+                || jsonReq.isNull("job_init_temp")
+                || jsonReq.isNull("job_init_cooling_rate")
+                || jsonReq.isNull("job_iterations_per_temp")
+                || jsonReq.isNull("task_init_cooling_rate")
+                || jsonReq.isNull("task_init_cooling_rate")
+                || jsonReq.isNull("task_iterations_per_temp")
+                || jsonReq.isNull("executor_path")) {
             res.status(422);
             jsonRes.put("message", "A parameter is missing");
             return jsonRes.toString();
         }
 
         String jobName = jsonReq.getString("job_name");
-        String dockerName = jsonReq.getString("docker_name");
-        Integer initTemp = jsonReq.getInt("init_temp");
-        Integer iterationsPerTemp = jsonReq.getInt("iterations_per_temp");
-        Double initCoolingRate = jsonReq.getDouble("init_cooling_rate");
+        Integer jobInitTemp = jsonReq.getInt("init_temp");
+        Integer jobIterationsPerTemp = jsonReq.getInt("iterations_per_temp");
+        Double jobInitCoolingRate = jsonReq.getDouble("init_cooling_rate");
+        Integer taskInitTemp = jsonReq.getInt("init_temp");
+        Integer taskIterationsPerTemp = jsonReq.getInt("iterations_per_temp");
+        Double taskInitCoolingRate = jsonReq.getDouble("init_cooling_rate");
+        String executorPath = jsonReq.getString("executor_path");
 
-        Long jobId = framework.createJob(jobName, initTemp, initCoolingRate, iterationsPerTemp);
+        Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
+                , taskInitTemp, taskInitCoolingRate, taskIterationsPerTemp);
         if(jobId < 0) {
             res.status(500);
             jsonRes.put("message", "Failed to create job");
@@ -133,37 +140,35 @@ public class Web {
     }
 
     /**
-     * PATCH /api/job/*
-     */
-    private static String modifyJob(Request req, Response res) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * GET /api/jobs
+     *
+     * Request:
+     * {
+     * }
+     *
+     * Response(200):
+     * {
+     *
+     * }
      */
     private static String getJobList(Request req, Response res) {
-        throw new UnsupportedOperationException();
+        res.type("application/json");
+        JSONObject jsonRes = new JSONObject();
+
+        return jsonRes.toString();
     }
 
     /**
      * GET /api/job/{job_id}
+     *
+     * Request:
+     * {
+     * }
      */
     private static String getJob(Request req, Response res) {
-        throw new UnsupportedOperationException();
-    }
+        res.type("application/json");
+        JSONObject jsonRes = new JSONObject();
 
-    /**
-     * GET /api/job/{job_id}/tasks
-     */
-    private static String getJobTaskList(Request req, Response res) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * GET /api/job/{job_id}/task/{task_id}
-     */
-    private static String getJobTask(Request req, Response res) {
-        throw new UnsupportedOperationException();
+        return jsonRes.toString();
     }
 }
