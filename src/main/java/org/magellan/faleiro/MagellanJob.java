@@ -265,7 +265,7 @@ public class MagellanJob {
      * @return A snapshot of all the important information in this job
      */
     public JobState getStatus(){
-        throw new UnsupportedOperationException();
+       return state;
     }
 
     /**
