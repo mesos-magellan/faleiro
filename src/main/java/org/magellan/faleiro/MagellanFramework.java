@@ -298,7 +298,6 @@ public class MagellanFramework {
      * Currently commented out as the format of the data send in each task is still unclear
      * @param slaveID
      * @param taskId
-     * @param data
      * @return
      */
     private Protos.TaskInfo getTaskInfo(Protos.SlaveID slaveID, final String taskId) {
@@ -361,7 +360,27 @@ public class MagellanFramework {
         jsonObj.put("best_location", mj.getBestLocation());
         jsonObj.put("best_energy", mj.getBestEnergy());
         jsonObj.put("energy_history", mj.getEnergyHistory());
+        jsonObj.put("num_running_tasks", mj.getNumTasksSent() - mj.getNumFinishedTasks());
+        jsonObj.put("num_finished_tasks", mj.getNumFinishedTasks());
         return jsonObj;
+    }
+
+    /**
+     * Returns the status of all jobs as an array of jsonobjects. Each jsonobject
+     * contains the information from getJobStatus()
+     * @return
+     */
+    public ArrayList<JSONObject> getAllJobStatuses() {
+        ArrayList<JSONObject> statusAll = new ArrayList<>();
+
+        Iterator it = jobsList.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry pair = (Map.Entry)it.next();
+            MagellanJob j = (MagellanJob) pair.getValue();
+            statusAll.add(getJobStatus(j.getJobID()));
+        }
+
+        return statusAll;
     }
 
     /**

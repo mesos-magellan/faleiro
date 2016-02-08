@@ -72,6 +72,8 @@ public class MagellanJob {
     // job id, will uniquely identify tasks withing the entire system.
     private int numTasksSent = 0;
 
+    private int numFinishedTasks = 0;
+
     // Main thread which creates new tasks.
     private Thread jobThread;
 
@@ -158,6 +160,10 @@ public class MagellanJob {
 
     public Protos.ExecutorInfo getTaskExecutor() { return taskExecutor; }
 
+    public int getNumTasksSent(){ return numTasksSent; }
+
+    public int getNumFinishedTasks(){ return numFinishedTasks;}
+
 
     /**
      * Starts the main thread of the job in a separate thread thread.
@@ -229,6 +235,7 @@ public class MagellanJob {
         double fitness_score = (double) js.get(MagellanTaskDataJsonTag.FITNESS_SCORE);
         String best_location = (String) js.get(MagellanTaskDataJsonTag.BEST_LOCATION);
 
+        numFinishedTasks++;
         energyHistory.add(jobBestEnergy);
         // If a better score was discovered, make this our global, best location
         if(fitness_score > jobBestEnergy) {
