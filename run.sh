@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 echo "************************* SETTING ENV VARS ************************* "
 export PRINCIPAL="mesos_master"
-export FRAMEWORK_USER="magellan"
+export FRAMEWORK_USER="vagrant"
 export MASTER_ADDRESS="10.144.144.10:5050"
 export LIBPROCESS_IP="10.144.144.11"
 export LIBPROCESS_PORT="5055"

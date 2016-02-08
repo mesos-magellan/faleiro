@@ -19,7 +19,7 @@ public class MagellanJob {
 
     private final double TEMP_MIN = 0.0001;
     private final double NUM_CPU = 1;
-    private final double NUM_MEM = 12;
+    private final double NUM_MEM = 32;
     private final double NUM_NET_MBPS = 0;
     private final double NUM_DISK = 0;
     private final int NUM_PORTS = 0;
@@ -109,13 +109,7 @@ public class MagellanJob {
     }
 
     public Protos.ExecutorInfo registerExecutor(String pathToExecutor){
-        String uri;
-        try {
-            uri = new File(pathToExecutor).getCanonicalPath();
-        }catch (IOException e){
-            System.err.println(e.getMessage());
-            return null;
-        }
+        String uri = "/home/vagrant/" + pathToExecutor;
         System.out.println("Uri for executor is " + uri);
 
         Protos.ExecutorInfo executor = Protos.ExecutorInfo.newBuilder()

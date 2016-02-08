@@ -43,6 +43,8 @@ public class MagellanFramework {
         public void statusUpdate(SchedulerDriver schedulerDriver, Protos.TaskStatus taskStatus) {
             System.out.println("Task Update: " + taskStatus.getTaskId().getValue() + " in state " + taskStatus.getState());
             switch (taskStatus.getState()) {
+                case TASK_ERROR:
+                    System.out.println("Reason: " + taskStatus.getMessage());
                 case TASK_FAILED:
                 case TASK_LOST:
                 case TASK_FINISHED:
@@ -316,7 +318,7 @@ public class MagellanFramework {
                 .addResources(Protos.Resource.newBuilder()
                         .setName("mem")
                         .setType(Protos.Value.Type.SCALAR)
-                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(128)))
+                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(32)))
                 .setData((ByteString)taskIdsToTaskData.get(taskId))
                 .setExecutor(Protos.ExecutorInfo.newBuilder(getExecutor(taskId)))
                 .build();
