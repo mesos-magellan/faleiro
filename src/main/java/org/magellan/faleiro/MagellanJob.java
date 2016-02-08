@@ -59,6 +59,9 @@ public class MagellanJob {
     // job id, will uniquely identify tasks withing the entire system.
     private int numTasksSent = 0;
 
+    // Main thread which creates new tasks.
+    private Thread jobThread;
+
     private JobState state = JobState.INIITIALIZED;
 
     public MagellanJob(long id, String name, double startingTemp, double coolingRate, int iterationsPerTemp){
@@ -86,9 +89,17 @@ public class MagellanJob {
     }
 
     /**
-     * Starts the main thread of the job. This should be run in a seperate thread from the main framework
-     * thread.
-     *
+     * Starts the main thread of the job in a separate thread thread.
+     */
+    public void start() {
+        jobThread = new Thread(() -> {
+            run();
+        });
+        state = JobState.RUNNING;
+        jobThread.start();
+    }
+
+    /**
      * This functions creates tasks that are passed to the magellan framework using an annealing approach.
      * We determine the starting location of each task using a temperature cooling mechanism where early on
      * in the execution of this job, more risks are taken and more tasks run in random locations in an attempt
@@ -96,10 +107,13 @@ public class MagellanJob {
      * are given starting locations much closer to the global, best solution for this job so that the neighbors
      * of the best solution are evaluated thoroughly in the hopes that they lie close to the global maximum.
      */
-    public void start() {
+    private void run() {
         while (jobTemp >= TEMP_MIN) {
             int i = 0;
             while(i < jobIterationsPerTemp) {
+                while(state!=JobState.RUNNING){
+                    // Waste cycles while job is paused
+                }
                 i++;
                 try {
                     // To keep the task ids unique throughout the global job space, use the job ID to
@@ -107,18 +121,18 @@ public class MagellanJob {
                     String newTaskId = "" + jobID + (++numTasksSent);
 
                     // Choose the magellan specific parameters for the new task
-                    ByteString data = pickNewTaskData(newTaskId);
+                    ByteString data = pickNewTaskStartingLocation(newTaskId);
                     // Create a task request object with parameters that fenzo will be looking for when
                     // pairing mesos resource offers with magellan tasks.
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
-                                                    newTaskId,
-                                                    jobName,
-                                                    NUM_CPU,
-                                                    NUM_MEM,
-                                                    NUM_NET_MBPS,
-                                                    NUM_DISK,
-                                                    NUM_PORTS,
-                                                    data);
+                            newTaskId,
+                            jobName,
+                            NUM_CPU,
+                            NUM_MEM,
+                            NUM_NET_MBPS,
+                            NUM_DISK,
+                            NUM_PORTS,
+                            data);
 
                     // Add the task to the pending queue which will be serviced by the magellan framework
                     // when it is ready.
@@ -194,11 +208,16 @@ public class MagellanJob {
      * @param id - ID of the task
      * @return
      */
-    private ByteString packTaskData(double temp, String location, String id){
+    private ByteString packTaskData(double temp, double coolingRate, String location, String id){
         JSONObject json = new JSONObject();
         json.put(MagellanTaskDataJsonTag.UID, id);
         json.put(MagellanTaskDataJsonTag.TEMPERATURE, temp);
-        json.put(MagellanTaskDataJsonTag.LOCATION, location);
+        json.put(MagellanTaskDataJsonTag.COOLING_RATE, coolingRate);
+
+        // If location is null, then we want the task to start at a random value. 
+        if(location!=null) {
+            json.put(MagellanTaskDataJsonTag.LOCATION, location);
+        }
         return ByteString.copyFromUtf8(json.toString());
     }
 
@@ -217,7 +236,7 @@ public class MagellanJob {
      * @param taskId
      * @return
      */
-    private ByteString pickNewTaskData(String taskId){
+    private ByteString pickNewTaskStartingLocation(String taskId){
         String location;
         if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
             System.out.println("[" + jobID + "] Picked current best location");

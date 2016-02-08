@@ -168,9 +168,7 @@ public class MagellanFramework {
         MagellanJob j = new MagellanJob(id, name, startingTemp, startingCoolingRate,iterationsPerTemp);
         jobsList.put(id, j);
 
-        new Thread(() -> {
-            j.start();
-        }).start();
+        j.start();
 
         return id;
     }
