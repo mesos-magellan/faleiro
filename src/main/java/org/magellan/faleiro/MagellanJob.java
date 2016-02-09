@@ -239,9 +239,9 @@ public class MagellanJob {
     public void processIncomingMessages(ByteString o) {
         // Retrieve the data sent by the executor
         JSONObject js = new JSONObject(o);
-        String taskID = (String) js.get(MagellanTaskDataJsonTag.UID);
-        double fitness_score = (double) js.get(MagellanTaskDataJsonTag.FITNESS_SCORE);
-        String best_location = (String) js.get(MagellanTaskDataJsonTag.BEST_LOCATION);
+        String taskID = js.getString(MagellanTaskDataJsonTag.UID);
+        double fitness_score = js.getDouble(MagellanTaskDataJsonTag.FITNESS_SCORE);
+        String best_location = js.getString(MagellanTaskDataJsonTag.BEST_LOCATION);
 
         numFreeTaskSlotsLeft.getAndIncrement();
         numFinishedTasks++;
