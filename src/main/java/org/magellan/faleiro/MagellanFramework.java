@@ -314,7 +314,7 @@ public class MagellanFramework {
                 }
             }
             // TODO: Posibly remove/increase this?
-            try{Thread.sleep(10);}catch(InterruptedException ie){}
+            try{Thread.sleep(100);}catch(InterruptedException ie){}
         }
     }
 
