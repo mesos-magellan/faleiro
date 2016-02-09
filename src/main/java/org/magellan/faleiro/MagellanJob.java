@@ -54,7 +54,7 @@ public class MagellanJob {
     private String jobCurrentBestSolution = "";
 
     // The energy of the current best solution
-    private double jobBestEnergy = 0;
+    private double jobBestEnergy = Double.MAX_VALUE;
 
     private String jobTaskName;
 
@@ -243,16 +243,17 @@ public class MagellanJob {
         double fitness_score = js.getDouble(MagellanTaskDataJsonTag.FITNESS_SCORE);
         String best_location = js.getString(MagellanTaskDataJsonTag.BEST_LOCATION);
 
-        System.out.println("Fitness score is: " + fitness_score + " . Best Location is " + best_location);
+        //System.out.println("Fitness score is: " + fitness_score + " . Best Location is " + best_location);
 
         numFreeTaskSlotsLeft.getAndIncrement();
         numFinishedTasks++;
-        energyHistory.add(jobBestEnergy);
+        energyHistory.add(fitness_score);
         // If a better score was discovered, make this our global, best location
         if(fitness_score < jobBestEnergy) {
             jobCurrentBestSolution = best_location;
+            jobBestEnergy = fitness_score;
         }
-        System.out.println("[" + taskID + "] Updated global best. Fitness: " + fitness_score + ". Path: " + best_location);
+        System.out.println("[" + taskID + "] Received data. Fitness: " + fitness_score + ". Path: " + best_location);
     }
 
     public void stop() {
