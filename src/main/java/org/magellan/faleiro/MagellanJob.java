@@ -195,7 +195,7 @@ public class MagellanJob {
      */
     private void run() {
         double metaTemp = jobTemp;
-        
+
         while (metaTemp > TEMP_MIN) {
             int i = 0;
             while(i < jobIterationsPerTemp) {
@@ -234,7 +234,7 @@ public class MagellanJob {
                     e.printStackTrace();
                 }
             }
-            jobTemp = jobTemp - jobCoolingRate;
+            metaTemp = metaTemp - jobCoolingRate;
         }
         System.out.println("Finished sending tasks. Waiting now. [Tasks sent, Tasks Finished] = [" + numTasksSent + ","+numFinishedTasks+"]");
         while(state != JobState.STOP && (numTasksSent != numFinishedTasks)) {
