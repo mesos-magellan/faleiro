@@ -356,18 +356,25 @@ public class MagellanJob {
      */
     private ByteString pickNewTaskStartingLocation(int taskTime, String taskName, String taskId, JSONObject job_data){
         String location;
-        double lastEnergy = energyHistory.getLast();
-        double df = lastEnergy - jobBestEnergy;
-        if(df < 0){
-            System.out.println("PICKED BEST LOCATION");
-            location = jobCurrentBestSolution;
-        }else if(Math.exp(-df/jobTemp) > Math.random()){
-            System.out.println("PICKED RANDOM LOCATION");
+        double lastEnergy;
+        if(!energyHistory.isEmpty()) {
+            lastEnergy = energyHistory.getLast();
+            double df = lastEnergy - jobBestEnergy;
+            if(df < 0){
+                System.out.println("PICKED BEST LOCATION");
+                location = jobCurrentBestSolution;
+            }else if(Math.exp(-df/jobTemp) > Math.random()){
+                System.out.println("PICKED RANDOM LOCATION");
+                location = "";
+            }else{
+                System.out.println("PICKED BEST LOCATION");
+                location = jobCurrentBestSolution;
+            }
+        } else {
             location = "";
-        }else{
-            System.out.println("PICKED BEST LOCATION");
-            location = jobCurrentBestSolution;
         }
+
+
         /*if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
         //if(true){
             //System.out.println("[" + jobID + "] Picked current best location");
