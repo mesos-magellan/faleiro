@@ -207,12 +207,12 @@ public class Web {
             jsonRes.put("message", "A parameter is missing");
             return jsonRes.toString();
         }
+        Long jobId = Long.parseLong(req.params(":job_id"));
 
         if(!framework.isDone(jobId)) {
             res.status(202);
         }
-
-        Long jobId = Long.parseLong(req.params(":job_id"));
+        
         return framework.getJobStatus(jobId).toString();
     }
 }
