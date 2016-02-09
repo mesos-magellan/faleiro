@@ -49,7 +49,6 @@ public class MagellanFramework {
                 case TASK_FAILED:
                 case TASK_LOST:
                 case TASK_FINISHED:
-
                     // Find which job this task is associated with at forward the message to it
                     try {
                         String data = new String(taskStatus.getData().toByteArray(), "UTF-8");

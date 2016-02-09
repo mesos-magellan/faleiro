@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.DoubleAccumulator;
 
 public class MagellanJob {
 
-    private final double TEMP_MIN = 0.0001;
+    private final double TEMP_MIN = 0;
     private final double NUM_CPU = 1;
     private final double NUM_MEM = 32;
     private final double NUM_NET_MBPS = 0;
@@ -188,7 +188,7 @@ public class MagellanJob {
      * of the best solution are evaluated thoroughly in the hopes that they lie close to the global maximum.
      */
     private void run() {
-        while (jobTemp >= TEMP_MIN) {
+        while (jobTemp > TEMP_MIN) {
             int i = 0;
             while(i < jobIterationsPerTemp) {
                 if(state == JobState.STOP) {
@@ -253,7 +253,7 @@ public class MagellanJob {
             jobCurrentBestSolution = best_location;
             jobBestEnergy = fitness_score;
         }
-        System.out.println("[" + taskID + "] Received data. Fitness: " + fitness_score + ". Path: " + best_location);
+        //System.out.println("[" + taskID + "] Received data. Fitness: " + fitness_score + ". Path: " + best_location);
     }
 
     public void stop() {
@@ -335,7 +335,7 @@ public class MagellanJob {
     private ByteString pickNewTaskStartingLocation(int taskTime, String taskName, String taskId, JSONObject job_data){
         String location;
         //if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
-        if(true)    {
+        if(true){
             System.out.println("[" + jobID + "] Picked current best location");
             location = jobCurrentBestSolution;
         } else {
