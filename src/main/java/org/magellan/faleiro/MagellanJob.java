@@ -328,12 +328,19 @@ public class MagellanJob {
      */
     private ByteString packTaskData(int taskTime, String taskName, String location, String id, JSONObject job_data){
         JSONObject json = new JSONObject();
+        //System.out.println(location);
         json.put(MagellanTaskDataJsonTag.UID, id);
         json.put(MagellanTaskDataJsonTag.TASK_SECONDS, taskTime);
         json.put(MagellanTaskDataJsonTag.JOB_DATA, job_data);
         json.put(MagellanTaskDataJsonTag.TASK_NAME, taskName);
+
+        json.put(MagellanTaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
         // If location is null, then we want the task to start at a random value.
-        if(location!=null) {
+        if(location==jobCurrentBestSolution) {
+            json.put(MagellanTaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
+            json.put(MagellanTaskDataJsonTag.LOCATION, location);
+        } else {
+            json.put(MagellanTaskDataJsonTag.FITNESS_SCORE, "");
             json.put(MagellanTaskDataJsonTag.LOCATION, location);
         }
         return ByteString.copyFromUtf8(json.toString());
@@ -356,7 +363,7 @@ public class MagellanJob {
      */
     private ByteString pickNewTaskStartingLocation(int taskTime, String taskName, String taskId, JSONObject job_data){
         String location;
-        double lastEnergy;
+        /*double lastEnergy;
         if(!energyHistory.isEmpty()) {
             lastEnergy = energyHistory.getLast();
             double df = lastEnergy - jobBestEnergy;
@@ -371,18 +378,20 @@ public class MagellanJob {
                 location = jobCurrentBestSolution;
             }
         } else {
+            System.out.println("PICKED RANDOM LOCATION");
             location = "";
-        }
+        }*/
 
 
-        /*if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
-        //if(true){
+        /*if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {*/
+        if(true){
             //System.out.println("[" + jobID + "] Picked current best location");
             location = jobCurrentBestSolution;
         } else {
             //System.out.println("[" + jobID + "] Picked random location");
             location = "";
-        }*/
+        }
+        System.out.println("Picked new Assignment. Location is " + location);
         // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
         return packTaskData(taskTime, taskName, location, taskId, job_data);
     }
