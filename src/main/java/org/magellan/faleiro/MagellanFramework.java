@@ -174,20 +174,16 @@ public class MagellanFramework {
      * @param jStartingTemp Starting temperature of job. Higher means job runs for longer
      * @param jCoolingRate Rate at which temperature depreciates each time
      * @param jCount number of iterations per temperature for job
-     * @param tTemp Starting temperature of job
-     * @param tCoolingRate Cooling rate of task
-     * @param tCount Number of iterations per temperature for each task
-     * @param pathToExecutor Path to the executor file on local machine
+     * @param taskName - Name of the task on the executor to run
+     * @param taskTime - How long to run each taskfor.
      * @param jso Additional job parameters
      */
     public long createJob(String jName,
                           int jStartingTemp,
                           double jCoolingRate,
                           int jCount,
-                          double tTemp,
-                          double tCoolingRate,
-                          double tCount,
-                          String pathToExecutor,
+                          int taskTime,
+                          String taskName,
                           JSONObject jso) {
         long id = numCreatedJobs++;
         MagellanJob j = new MagellanJob(id,
@@ -195,10 +191,8 @@ public class MagellanFramework {
                                         jStartingTemp,
                                         jCoolingRate,
                                         jCount,
-                                        tTemp,
-                                        tCoolingRate,
-                                        tCount,
-                                        pathToExecutor,
+                                        taskTime,
+                                        taskName,
                                         jso);
         jobsList.put(id, j);
 
@@ -375,9 +369,8 @@ public class MagellanFramework {
         jsonObj.put("job_starting_temp", mj.getJobStartingTemp());
         jsonObj.put("job_cooling_rate", mj.getJobCoolingRate());
         jsonObj.put("job_count", mj.getJobCount());
-        jsonObj.put("task_starting_temp", mj.getTaskStartingTemp());
-        jsonObj.put("task_cooling_rate", mj.getTaskCoolingRate());
-        jsonObj.put("task_count", mj.getTaskCount());
+        jsonObj.put("task_seconds",mj.getTaskTime());
+        jsonObj.put("task_name", mj.getJobTaskName());
         jsonObj.put("best_location", mj.getBestLocation());
         jsonObj.put("best_energy", mj.getBestEnergy());
         jsonObj.put("energy_history", mj.getEnergyHistory());

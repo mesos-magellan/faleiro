@@ -47,14 +47,8 @@ public class MagellanJob {
     // starting position
     private int jobIterationsPerTemp;
 
-    // Starting temp of new tasks
-    private double taskTemp;
-
-    // Cooling rate for tasks
-    private double taskCoolingRate;
-
-    // Task nUmber of iterations per temperature
-    private double taskCount;
+    // How long each task runs for
+    private int jobTaskTime;
 
     // The current best solution as determined by all the running tasks
     private String jobCurrentBestSolution = "";
@@ -96,10 +90,7 @@ public class MagellanJob {
      * @param jStartingTemp Starting temperature of job. Higher means job runs for longer
      * @param jCoolingRate Rate at which temperature depreciates each time
      * @param jCount number of iterations per temperature for job
-     * @param tTemp Starting temperature of job
-     * @param tCoolingRate Cooling rate of task
-     * @param tCount Number of iterations per temperature for each task
-     * @param pathToExecutor Name of the task we want to execute on the executor side
+     * @param taskName Name of the task we want to execute on the executor side
      * @param jso Additional Job param
      */
     public MagellanJob(long id,
@@ -107,23 +98,19 @@ public class MagellanJob {
                        double jStartingTemp,
                        double jCoolingRate,
                        int jCount,
-                       double tTemp,
-                       double tCoolingRate,
-                       double tCount,
-                       String pathToExecutor,
+                       int taskTime,
+                       String taskName,
                        JSONObject jso)
     {
         jobID = id;
+        jobName = jName;
         jobTemp = jStartingTemp;
         jobCoolingRate = jCoolingRate;
         jobIterationsPerTemp = jCount;
-        jobName = jName;
-        jobTaskName = pathToExecutor;
-        taskTemp = tTemp;
-        taskCoolingRate = tCoolingRate;
-        taskCount = tCount;
-        taskExecutor = registerExecutor("/usr/local/bin/enrique");
+        jobTaskTime = taskTime;
+        jobTaskName = taskName;
         jobAdditionalParam = jso;
+        taskExecutor = registerExecutor("/usr/local/bin/enrique");
     }
 
     public Protos.ExecutorInfo registerExecutor(String pathToExecutor){
@@ -162,11 +149,9 @@ public class MagellanJob {
 
     public double getJobCount(){ return jobIterationsPerTemp; }
 
-    public double getTaskStartingTemp() {return taskTemp; }
+    public double getTaskTime(){ return jobTaskTime; }
 
-    public double getTaskCoolingRate(){ return taskCoolingRate; }
-
-    public double getTaskCount(){ return taskCount; }
+    public String getJobTaskName() {return jobTaskName;}
 
     public JSONObject getJobAdditionalParam(){ return jobAdditionalParam; }
 
@@ -220,7 +205,7 @@ public class MagellanJob {
                     String newTaskId = "" + jobID + (numTasksSent+1);
 
                     // Choose the magellan specific parameters for the new task
-                    ByteString data = pickNewTaskStartingLocation(taskTemp, taskCoolingRate, taskCount, newTaskId, jobAdditionalParam);
+                    ByteString data = pickNewTaskStartingLocation(jobTaskTime, jobTaskName, newTaskId, jobAdditionalParam);
                     // Create a task request object with parameters that fenzo will be looking for when
                     // pairing mesos resource offers with magellan tasks.
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
@@ -312,21 +297,16 @@ public class MagellanJob {
     /**
      * Takes the given parameters and packages it into a json formatted Bytestring which can be
      * packaged into a TaskInfo object by the magellan framework
-     * @param temp - Starting temperature of the task
-     * @param coolingRate - Rate at which the temperature cools
-     * @param count - Number of iterations per temperature
      * @param location - Starting location of the task
      * @param id - ID of the task
      * @return
      */
-    private ByteString packTaskData(double temp, double coolingRate, double count, String location, String id, JSONObject job_data){
+    private ByteString packTaskData(int taskTime, String taskName, String location, String id, JSONObject job_data){
         JSONObject json = new JSONObject();
         json.put(MagellanTaskDataJsonTag.UID, id);
-        json.put(MagellanTaskDataJsonTag.TEMPERATURE, temp);
-        json.put(MagellanTaskDataJsonTag.COOLING_RATE, coolingRate);
-        json.put(MagellanTaskDataJsonTag.COUNT, count);
+        json.put(MagellanTaskDataJsonTag.TASK_SECONDS, taskTime);
         json.put(MagellanTaskDataJsonTag.JOB_DATA, job_data);
-        json.put(MagellanTaskDataJsonTag.TASK_NAME, jobTaskName);
+        json.put(MagellanTaskDataJsonTag.TASK_NAME, taskName);
         // If location is null, then we want the task to start at a random value.
         if(location!=null) {
             json.put(MagellanTaskDataJsonTag.LOCATION, location);
@@ -349,7 +329,7 @@ public class MagellanJob {
      * @param taskId
      * @return
      */
-    private ByteString pickNewTaskStartingLocation(double temp, double coolingRate, double count, String taskId, JSONObject job_data){
+    private ByteString pickNewTaskStartingLocation(int taskTime, String taskName, String taskId, JSONObject job_data){
         String location;
         //if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
         if(true)    {
@@ -360,7 +340,7 @@ public class MagellanJob {
             location = "";
         }
         // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
-        return packTaskData(temp, coolingRate, count, location, taskId, job_data);
+        return packTaskData(taskTime, taskName, location, taskId, job_data);
     }
 
     enum JobState{
