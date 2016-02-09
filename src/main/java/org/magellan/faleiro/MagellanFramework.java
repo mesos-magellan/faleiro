@@ -387,6 +387,7 @@ public class MagellanFramework {
         jsonObj.put("energy_history", mj.getEnergyHistory());
         jsonObj.put("num_running_tasks", mj.getNumTasksSent() - mj.getNumFinishedTasks());
         jsonObj.put("num_finished_tasks", mj.getNumFinishedTasks());
+        jsonObj.put("num_total_tasks", mj.getNumTotalTasks());
         return jsonObj;
     }
 

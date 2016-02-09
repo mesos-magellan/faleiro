@@ -71,6 +71,8 @@ public class MagellanJob {
 
     private int numFinishedTasks = 0;
 
+    private final int numTotalTasks;
+
     // Number of tasks that have been sent out but have not finished yet
     private AtomicInteger numFreeTaskSlotsLeft = new AtomicInteger(10);
 
@@ -111,6 +113,8 @@ public class MagellanJob {
         jobTaskName = taskName;
         jobAdditionalParam = jso;
         taskExecutor = registerExecutor("/usr/local/bin/enrique");
+        numTotalTasks = (int)(jStartingTemp/jCoolingRate)*jCount + ((jStartingTemp%jCoolingRate!=0)?1:0);
+
     }
 
     public Protos.ExecutorInfo registerExecutor(String pathToExecutor){
@@ -166,6 +170,8 @@ public class MagellanJob {
     public int getNumTasksSent(){ return numTasksSent; }
 
     public int getNumFinishedTasks(){ return numFinishedTasks;}
+
+    public int getNumTotalTasks() {return numTotalTasks;}
 
 
     /**
@@ -235,6 +241,10 @@ public class MagellanJob {
         }
         System.out.println("[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
         state=JobState.DONE;
+    }
+
+    public boolean isDone(){
+        return state == JobState.DONE || state == JobState.STOP;
     }
 
     /**
