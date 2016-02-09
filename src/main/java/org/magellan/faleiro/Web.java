@@ -176,7 +176,8 @@ public class Web {
      * {
      * }
      *
-     * Response(200):
+     * Response(200): // job done
+     * Response(202): // job still running
      * {
      *     job_id : int,
      *     job_name : String,
@@ -205,6 +206,10 @@ public class Web {
             res.status(422);
             jsonRes.put("message", "A parameter is missing");
             return jsonRes.toString();
+        }
+
+        if(!framework.isDone(jobId)) {
+            res.status(202);
         }
 
         Long jobId = Long.parseLong(req.params(":job_id"));
