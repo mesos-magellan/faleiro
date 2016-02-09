@@ -10,6 +10,7 @@ import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,14 +49,24 @@ public class MagellanFramework {
                 case TASK_FAILED:
                 case TASK_LOST:
                 case TASK_FINISHED:
-                    // Find which job this task is associated with at forward the message to it
-                    String taskID = recoverTaskId(taskStatus.getData());
-                    jobsList.get(submittedTaskIdsToJobIds.get(taskID)).processIncomingMessages(taskStatus.getData());
-                    submittedTaskIdsToJobIds.remove(taskID);
-                    taskIdsToTaskData.remove(taskID);
 
-                    //Notify Fenzo that the task has completed and is no longer assigned
-                    fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
+                    // Find which job this task is associated with at forward the message to it
+                    try {
+                        String data = new String(taskStatus.getData().toByteArray(), "UTF-8");
+                        String taskID = recoverTaskId(data);
+
+                        // Forward the data to the appropriate job object
+                        processData(data, taskID);
+
+                        // Remove the tasks from data structures
+                        submittedTaskIdsToJobIds.remove(taskID);
+                        taskIdsToTaskData.remove(taskID);
+
+                        //Notify Fenzo that the task has completed and is no longer assigned
+                        fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
                     break;
             }
         }
@@ -342,12 +353,12 @@ public class MagellanFramework {
     }
 
     /**
-     * Given a Bytestring message from an executor, returns the task number
-     * @param bs
+     * Given a String message in UTF-8 from an executor, returns the task number
+     * @param data
      * @return
      */
-    public String recoverTaskId(ByteString bs){
-        JSONObject o = new JSONObject(bs);
+    public String recoverTaskId(String data){
+        JSONObject o = new JSONObject(data);
         return (String) o.get(MagellanTaskDataJsonTag.UID);
     }
 
@@ -405,6 +416,11 @@ public class MagellanFramework {
     private Protos.ExecutorInfo getExecutor(String taskID){
         Long jobID = (Long)submittedTaskIdsToJobIds.get(taskID);
         return ((MagellanJob)jobsList.get(jobID)).getTaskExecutor();
+    }
+
+    private void processData(String s, String taskID) {
+        long jobId = (Long)submittedTaskIdsToJobIds.get(taskID);
+        ((MagellanJob)jobsList.get(jobId)).processIncomingMessages(s);
     }
 
 }

@@ -234,20 +234,22 @@ public class MagellanJob {
     /**
      * Called by magellan framework when a message from the executor is sent to this job. This method
      * processess the message and changes the best location and fitness store if needed.
-     * @param o
+     * @param data
      */
-    public void processIncomingMessages(ByteString o) {
+    public void processIncomingMessages(String data) {
         // Retrieve the data sent by the executor
-        JSONObject js = new JSONObject(o);
+        JSONObject js = new JSONObject(data);
         String taskID = js.getString(MagellanTaskDataJsonTag.UID);
         double fitness_score = js.getDouble(MagellanTaskDataJsonTag.FITNESS_SCORE);
         String best_location = js.getString(MagellanTaskDataJsonTag.BEST_LOCATION);
+
+        System.out.println("Fitness score is: " + fitness_score + " . Best Location is " + best_location);
 
         numFreeTaskSlotsLeft.getAndIncrement();
         numFinishedTasks++;
         energyHistory.add(jobBestEnergy);
         // If a better score was discovered, make this our global, best location
-        if(fitness_score > jobBestEnergy) {
+        if(fitness_score < jobBestEnergy) {
             jobCurrentBestSolution = best_location;
         }
         System.out.println("[" + taskID + "] Updated global best. Fitness: " + fitness_score + ". Path: " + best_location);
