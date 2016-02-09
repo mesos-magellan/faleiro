@@ -194,7 +194,9 @@ public class MagellanJob {
      * of the best solution are evaluated thoroughly in the hopes that they lie close to the global maximum.
      */
     private void run() {
-        while (jobTemp > TEMP_MIN) {
+        double metaTemp = jobTemp;
+        
+        while (metaTemp > TEMP_MIN) {
             int i = 0;
             while(i < jobIterationsPerTemp) {
                 if(state == JobState.STOP) {

@@ -212,7 +212,7 @@ public class Web {
         if(!framework.isDone(jobId)) {
             res.status(202);
         }
-        
+
         return framework.getJobStatus(jobId).toString();
     }
 }
