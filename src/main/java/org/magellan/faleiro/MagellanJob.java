@@ -10,7 +10,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.DoubleAccumulator;
@@ -59,7 +63,7 @@ public class MagellanJob {
     private String jobTaskName;
 
     // A list of the best energies found by every task run by this job.
-    private ArrayList<Double> energyHistory = new ArrayList<>();
+    private ConcurrentLinkedDeque<Double> energyHistory = new ConcurrentLinkedDeque<>();
 
     // This list stores tasks that are ready to be scheduled. This list is then consumed by the
     // MagellanFramework when it is ready to accept new tasks.
@@ -163,7 +167,7 @@ public class MagellanJob {
 
     public double getBestEnergy() { return jobBestEnergy; }
 
-    public ArrayList<Double> getEnergyHistory() { return energyHistory; }
+    public Queue<Double> getEnergyHistory() { return energyHistory; }
 
     public Protos.ExecutorInfo getTaskExecutor() { return taskExecutor; }
 
@@ -352,14 +356,26 @@ public class MagellanJob {
      */
     private ByteString pickNewTaskStartingLocation(int taskTime, String taskName, String taskId, JSONObject job_data){
         String location;
-        //if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
-        if(true){
+        double lastEnergy = energyHistory.getLast();
+        double df = lastEnergy - jobBestEnergy;
+        if(df < 0){
+            System.out.println("PICKED BEST LOCATION");
+            location = jobCurrentBestSolution;
+        }else if(Math.exp(-df/jobTemp) > Math.random()){
+            System.out.println("PICKED RANDOM LOCATION");
+            location = "";
+        }else{
+            System.out.println("PICKED BEST LOCATION");
+            location = jobCurrentBestSolution;
+        }
+        /*if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
+        //if(true){
             //System.out.println("[" + jobID + "] Picked current best location");
             location = jobCurrentBestSolution;
         } else {
             //System.out.println("[" + jobID + "] Picked random location");
             location = "";
-        }
+        }*/
         // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
         return packTaskData(taskTime, taskName, location, taskId, job_data);
     }
