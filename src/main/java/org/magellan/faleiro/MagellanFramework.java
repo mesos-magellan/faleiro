@@ -391,6 +391,17 @@ public class MagellanFramework {
         return jsonObj;
     }
 
+    public boolean isDone(Long jobID){
+        MagellanJob mj = jobsList.get(jobID);
+
+        if(mj==null){
+            //Request off developer
+            return true;
+        }
+
+        return mj.isDone();
+    }
+
     /**
      * Returns the status of all jobs as an array of jsonobjects. Each jsonobject
      * contains the information from getJobStatus()
