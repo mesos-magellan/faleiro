@@ -226,9 +226,15 @@ public class MagellanJob {
                     e.printStackTrace();
                 }
             }
-            jobTemp = jobTemp * jobCoolingRate;
+            jobTemp = jobTemp - jobCoolingRate;
         }
-        System.out.println("[" + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
+        System.out.println("Finished sending tasks. Waiting now. [Tasks sent, Tasks Finished] = [" + numTasksSent + ","+numFinishedTasks+"]");
+        while(state != JobState.STOP && (numTasksSent != numFinishedTasks)) {
+            // Waste time while we wait for all tasks to finish
+            try{Thread.sleep(100);}catch(InterruptedException ie){}
+        }
+        System.out.println("[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
+        state=JobState.DONE;
     }
 
     /**
@@ -336,10 +342,10 @@ public class MagellanJob {
         String location;
         //if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {
         if(true){
-            System.out.println("[" + jobID + "] Picked current best location");
+            //System.out.println("[" + jobID + "] Picked current best location");
             location = jobCurrentBestSolution;
         } else {
-            System.out.println("[" + jobID + "] Picked random location");
+            //System.out.println("[" + jobID + "] Picked random location");
             location = "";
         }
         // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
@@ -347,6 +353,6 @@ public class MagellanJob {
     }
 
     enum JobState{
-        INIITIALIZED, RUNNING, PAUSED, STOP;
+        INIITIALIZED, RUNNING, PAUSED, STOP, DONE;
     }
 }

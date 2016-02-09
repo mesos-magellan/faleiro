@@ -42,12 +42,13 @@ public class MagellanFramework {
         }
 
         public void statusUpdate(SchedulerDriver schedulerDriver, Protos.TaskStatus taskStatus) {
-            System.out.println("Task Update: " + taskStatus.getTaskId().getValue() + " in state " + taskStatus.getState());
+            //System.out.println("Task Update: " + taskStatus.getTaskId().getValue() + " in state " + taskStatus.getState());
             switch (taskStatus.getState()) {
                 case TASK_ERROR:
-                    System.out.println("Reason: " + taskStatus.getMessage());
                 case TASK_FAILED:
                 case TASK_LOST:
+                    System.out.println("Task Failure. Reason: " + taskStatus.getMessage());
+                    break;
                 case TASK_FINISHED:
                     // Find which job this task is associated with at forward the message to it
                     try {
