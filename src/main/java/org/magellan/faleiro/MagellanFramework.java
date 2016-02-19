@@ -55,12 +55,12 @@ public class MagellanFramework {
                         String data = new String(taskStatus.getData().toByteArray(), "UTF-8");
                         String taskID = recoverTaskId(data);
 
-                        // Forward the data to the appropriate job object
+                        // Process the result of the task by forwarding the data to the job
+                        // responsible for its creation
                         processData(data, taskID);
 
                         // Remove the tasks from data structures
                         submittedTaskIdsToJobIds.remove(taskID);
-                        taskIdsToTaskData.remove(taskID);
 
                         //Notify Fenzo that the task has completed and is no longer assigned
                         fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
@@ -92,29 +92,55 @@ public class MagellanFramework {
         }
     }
 
-    private final TaskScheduler fenzoScheduler;
-    private final AtomicReference<MesosSchedulerDriver> mesosDriverReference = new AtomicReference<>();
-    private final MesosSchedulerDriver mesosSchedulerDriver;
-    private final AtomicBoolean isFrameworkShutdown = new AtomicBoolean(false);
+    private TaskScheduler fenzoScheduler;
+    private MesosSchedulerDriver mesosSchedulerDriver;
+    private boolean initialized = false;
+    private  long numCreatedJobs = 0;
+    private final AtomicBoolean frameworkHasShutdown = new AtomicBoolean(true);
+    private final AtomicReference<MesosSchedulerDriver> mesosDriver = new AtomicReference<>();
     private final ConcurrentHashMap<Long, MagellanJob> jobsList = new ConcurrentHashMap<>();
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
     private final Map<String, MagellanTaskRequest> pendingTasksMap = new HashMap<>();
     private final HashMap<String, Long> submittedTaskIdsToJobIds = new HashMap<>();
-    private final HashMap<String, ByteString> taskIdsToTaskData = new HashMap<>();
+    private final HashMap<String, String> launchedTasks = new HashMap<>();
 
-    private  long numCreatedJobs = 0;
-    private final Map<String, String> launchedTasks = new HashMap<>();
-
-    public MagellanFramework(String mesosMasterIP){
+    public MagellanFramework(){
         fenzoScheduler = new TaskScheduler.Builder()
                 .withLeaseOfferExpirySecs(1000000000)
                 .withLeaseRejectAction(new Action1<VirtualMachineLease>() {
                     public void call(VirtualMachineLease lease) {
                         System.out.println("Declining offer on " + lease.hostname());
-                        mesosDriverReference.get().declineOffer(lease.getOffer().getId());
+                        mesosDriver.get().declineOffer(lease.getOffer().getId());
                     }
                 })
                 .build();
+    }
+
+    /**
+     * Shutsdown the framework. The shutdown happens during or shortly after this call
+     * returns
+     * @return status of shutdown
+     */
+    public Protos.Status shutdownFramework() {
+        System.out.println("Shutting down mesos driver");
+        Protos.Status status = mesosSchedulerDriver.stop();
+        frameworkHasShutdown.set(true);
+        initialized = false;
+        return status;
+    }
+
+    /**
+     * Initializes the framework by creating necessary data structures to connect to the master.
+     * This method only initializes the framework. To start and connect the framework to the master,
+     * This method returns without doing anything if this method is called while the framework is running.
+     * call startFramework()
+     * @param mesosMasterIP     - IP Address of the mesos master
+     */
+    public void initializeFramework(String mesosMasterIP){
+        // Dont initialize while running
+        if(!frameworkHasShutdown.get()){
+            return;
+        }
 
         Scheduler mesosScheduler = new MagellanScheduler();
 
@@ -157,54 +183,89 @@ public class MagellanFramework {
                     mesosMasterIP,
                     true);
         }
-        mesosDriverReference.set(mesosSchedulerDriver);
+        mesosDriver.set(mesosSchedulerDriver);
+        frameworkHasShutdown.set(false);
+        initialized = true;
+    }
 
+
+    /**
+     * Starts the mesos driver in another thread which connects to the master.
+     * Starts the main framework loop in another thread
+     *
+     * Call to this method is ignored if the framework is not initialized by a previous
+     * call to initializeFramework() or if the framework is already running.
+     */
+    public void startFramework(){
+        if(!initialized){
+            System.err.println("Initialize the framework first using MagellanFramework::initialize() before calling this method");
+            return;
+        }
+
+        if(!frameworkHasShutdown.get()) {
+            System.err.println("Framework is already running");
+        }
+
+        // Start the driver
         new Thread() {
             public void run() {
                 mesosSchedulerDriver.run();
             }
         }.start();
         mesosSchedulerDriver.stop();
-    }
 
-    public void shutdownFramework() {
-        System.out.println("Shutting down mesos driver");
-        Protos.Status status = mesosSchedulerDriver.stop();
-        isFrameworkShutdown.set(true);
-    }
-
-    public void startFramework(){
+        // Start the framework
         new Thread(() -> {
             runFramework();
         }).start();
+
     }
 
     /**
+     * Creates a job and runs it on a separate thread
      *
-     * @param jName Name of job
-     * @param jStartingTemp Starting temperature of job. Higher means job runs for longer
-     * @param jCoolingRate Rate at which temperature depreciates each time
-     * @param jCount number of iterations per temperature for job
+     * @param jobName Name of job
+     * @param jobStartingTemp Starting temperature of job. Higher means job runs for longer
+     * @param jobCoolingRate Rate at which temperature depreciates each time
+     * @param jobIterationsPerTemp number of iterations per temperature for job
      * @param taskName - Name of the task on the executor to run
-     * @param taskTime - How long to run each taskfor.
-     * @param jso Additional job parameters
+     * @param taskTime - How long to run each task for.
+     * @param additionalParameters Additional job parameters
+     *
+     * @return An ID number greater or equal to 0 if successful
+     *          -1 if invalid parameters
      */
-    public long createJob(String jName,
-                          int jStartingTemp,
-                          double jCoolingRate,
-                          int jCount,
+    public long createJob(String jobName,
+                          int jobStartingTemp,
+                          double jobCoolingRate,
+                          int jobIterationsPerTemp,
                           int taskTime,
                           String taskName,
-                          JSONObject jso) {
+                          JSONObject additionalParameters)
+    {
+
+        if (jobName == null ||
+                jobStartingTemp <= 0 ||
+                jobCoolingRate <= 0 ||
+                jobIterationsPerTemp <= 0 ||
+                taskTime <= 0 ||
+                taskName == null ||
+                additionalParameters == null)
+        {
+            // One or more of the parameters have invalid values
+            return -1;
+        }
+
+
         long id = numCreatedJobs++;
         MagellanJob j = new MagellanJob(id,
-                                        jName,
-                                        jStartingTemp,
-                                        jCoolingRate,
-                                        jCount,
+                                        jobName,
+                                        jobStartingTemp,
+                                        jobCoolingRate,
+                                        jobIterationsPerTemp,
                                         taskTime,
                                         taskName,
-                                        jso);
+                                        additionalParameters);
         jobsList.put(id, j);
 
         j.start();
@@ -212,42 +273,21 @@ public class MagellanFramework {
         return id;
     }
 
-    public void stopJob(Long jobID) {
-        MagellanJob j = jobsList.get(jobID);
-        if(j!=null){
-            j.stop();
-        }
-    }
-
-    public void pauseJob(Long jobID) {
-        MagellanJob j = jobsList.get(jobID);
-        if(j!=null){
-            j.pause();
-        }
-    }
-
-    public void resumeJob(Long jobID){
-        MagellanJob j = jobsList.get(jobID);
-        if(j!=null){
-            j.resume();
-        }
-    }
-
     /**
      *  This contains the main loop of the program. In here, the framework queries
      *  each running job in the system to get a list of tasks each job wants to run.
-     *  These set of tasks are then given to Fenzo which matches availble resource
+     *  These set of tasks are then given to Fenzo which matches available resource
      *  offers from Mesos to tasks.The resulting matches from Fenzo are then given
      *  to the Mesos Driver for execution.
      */
-    public void runFramework(){
+    private void runFramework(){
         System.out.println("Running all");
         List<VirtualMachineLease> newLeases = new ArrayList<>();
         List<TaskRequest> newTaskRequests = new ArrayList<>();
 
         while(true) {
             // Only if the framework has shutdown do we exist our main loop
-            if(isFrameworkShutdown.get()) {
+            if(frameworkHasShutdown.get()) {
                 System.out.println("Framework terminated");
                 return;
             }
@@ -268,7 +308,7 @@ public class MagellanFramework {
                     for(MagellanTaskRequest request : pending){
                         pendingTasksMap.put(request.getId(),request);
                         submittedTaskIdsToJobIds.put(request.getId(),j.getJobID());
-                        taskIdsToTaskData.put(request.getId(), request.getData());
+                        //taskIdsToTaskData.put(request.getId(), request.getData());
                     }
                 }
             }
@@ -318,18 +358,66 @@ public class MagellanFramework {
         }
     }
 
+    /**
+     * Stops a job from submitting new tasks to the framework.
+     * Statistics on the jobs progress at the time this method is called are
+     * available by calling getJobStatus(). Tasks that have already been sent out
+     * are still processed when the tasks come back from the executors and the
+     * statistics are updated accordingly
+     *
+     * @param jobID     ID of the job to stop
+     */
+    public void stopJob(Long jobID) {
+        MagellanJob j = jobsList.get(jobID);
+        if(j!=null){
+            j.stop();
+        }
+    }
+
+    /**
+     * Pauses a job. This means new tasks are not submitted the framework.
+     * Tasks that have already been sent out are still processed and the job
+     * statistics are updated accordingly. To resume the job, call resumeJob()
+     * Calling this method on a job that has terminated naturally or by a call
+     * to stopJob() is ignored
+     * @param jobID     ID of the job to pause
+     */
+    public void pauseJob(Long jobID) {
+        MagellanJob j = jobsList.get(jobID);
+        if(j!=null){
+            j.pause();
+        }
+    }
+
+    /**
+     * Resumes a paused job. This means that the job can continue passing new
+     * tasks to the framework.
+     * Calling this method on a job that has terminated naturally or by a call
+     * to stopJob() is ignored
+     *
+     * @param jobID     ID of job to resume
+     */
+    public void resumeJob(Long jobID){
+        MagellanJob j = jobsList.get(jobID);
+        if(j!=null){
+            j.resume();
+        }
+    }
+
 
     /**
      * Packages the information we want to send over into a TaskInfo construct which we can send
-     * Currently commented out as the format of the data send in each task is still unclear
-     * @param slaveID
-     * @param taskId
+     * @param slaveID   - ID of slave where this task will run
+     * @param taskId    - Used to retrieve task specific data and the executor used to run
+ *                        the task
      * @return
      */
     private Protos.TaskInfo getTaskInfo(Protos.SlaveID slaveID, final String taskId) {
 
-        Protos.TaskID pTaskId = Protos.TaskID.newBuilder()
-                .setValue(taskId).build();
+        Protos.TaskID pTaskId = Protos.TaskID.newBuilder().setValue(taskId).build();
+
+        // Create a TaskInfo object that encapsulates all the necessary information for a task
+        // to reach its destination and run successfully on the executor.
         return Protos.TaskInfo.newBuilder()
                 .setName("task " + pTaskId.getValue())
                 .setTaskId(pTaskId)
@@ -337,12 +425,12 @@ public class MagellanFramework {
                 .addResources(Protos.Resource.newBuilder()
                         .setName("cpus")
                         .setType(Protos.Value.Type.SCALAR)
-                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(1)))
+                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(getCpus(taskId))))
                 .addResources(Protos.Resource.newBuilder()
                         .setName("mem")
                         .setType(Protos.Value.Type.SCALAR)
-                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(32)))
-                .setData((ByteString)taskIdsToTaskData.get(taskId))
+                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(getMem(taskId))))
+                .setData(getData(taskId))
                 .setExecutor(Protos.ExecutorInfo.newBuilder(getExecutor(taskId)))
                 .build();
 
@@ -353,19 +441,50 @@ public class MagellanFramework {
     }
 
     /**
+     * Returns the number of cpu's requested by a task
+     * @param taskId
+     * @return
+     */
+    private double getCpus(String taskId){
+        return pendingTasksMap.get(taskId).getCPUs();
+    }
+
+    /**
+     * Returns the amount of memory requested by a task
+     * @param taskId
+     * @return
+     */
+    private double getMem(String taskId){
+        return pendingTasksMap.get(taskId).getMemory();
+    }
+
+    /**
+     * Returns the task specific data/parameters given to it by the job
+     * responsible for its creation.
+     * @param taskId
+     * @return
+     */
+    private ByteString getData(String taskId){
+        return pendingTasksMap.get(taskId).getData();
+    }
+
+    /**
      * Given a String message in UTF-8 from an executor, returns the task number
      * @param data
      * @return
      */
-    public String recoverTaskId(String data){
+    private String recoverTaskId(String data){
         JSONObject o = new JSONObject(data);
         return (String) o.get(MagellanTaskDataJsonTag.UID);
     }
 
     /**
-     * Reuturns state of a job as a jsonobject
+     * Returns the state of a job as a JSONObject. This can be sent back to the
+     * customer or used by zookeeper to persist the state of the framework and
+     * jobs in the system
      * @param jobID
-     * @return
+     * @return JSONObject where the key is attributes that store the state
+     *          of each job
      */
     public JSONObject getJobStatus(Long jobID) {
         MagellanJob mj = jobsList.get(jobID);
@@ -391,11 +510,16 @@ public class MagellanFramework {
         return jsonObj;
     }
 
+    /**
+     * Returns true if the job is either done or stopped or if the Job DNE.
+     * Returns false if the job is paused or running
+     * @param jobID
+     * @return
+     */
     public boolean isDone(Long jobID){
         MagellanJob mj = jobsList.get(jobID);
 
         if(mj==null){
-            //Request off developer
             return true;
         }
 
@@ -403,7 +527,7 @@ public class MagellanFramework {
     }
 
     /**
-     * Returns the status of all jobs as an array of jsonobjects. Each jsonobject
+     * Returns the status of all jobs as an array of JSONObject. Each JSONObject
      * contains the information from getJobStatus()
      * @return
      */
@@ -421,18 +545,24 @@ public class MagellanFramework {
     }
 
     /**
-     * Given a taskID, get a execturo instance
+     * Given a taskID, get the executor instance the task will run on
      * @param taskID
      * @return
      */
     private Protos.ExecutorInfo getExecutor(String taskID){
-        Long jobID = (Long)submittedTaskIdsToJobIds.get(taskID);
-        return ((MagellanJob)jobsList.get(jobID)).getTaskExecutor();
+        Long jobID = submittedTaskIdsToJobIds.get(taskID);
+        return jobsList.get(jobID).getTaskExecutor();
     }
 
-    private void processData(String s, String taskID) {
-        long jobId = (Long)submittedTaskIdsToJobIds.get(taskID);
-        ((MagellanJob)jobsList.get(jobId)).processIncomingMessages(s);
+    /**
+     * This method is used to pass the result of a finished task to the
+     * job that created the task
+     * @param taskResult    - Response of finished task that needs to be processed
+     * @param taskID        - Task Id of task that just finished
+     */
+    private void processData(String taskResult, String taskID) {
+        long jobId = submittedTaskIdsToJobIds.get(taskID);
+        jobsList.get(jobId).processIncomingMessages(taskResult);
     }
 
 }

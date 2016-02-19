@@ -11,7 +11,8 @@ public class Web {
     private static MagellanFramework framework;
 
     public static void main(String[] args) {
-        framework = new MagellanFramework(System.getenv("MASTER_ADDRESS"));
+        framework = new MagellanFramework();
+        framework.initializeFramework(System.getenv("MASTER_ADDRESS"));
         framework.startFramework();
         initWebRoutes();
     }

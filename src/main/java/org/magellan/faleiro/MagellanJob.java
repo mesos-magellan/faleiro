@@ -283,11 +283,15 @@ public class MagellanJob {
     }
 
     public void pause() {
-        state = JobState.PAUSED;
+        if(!isDone()) {
+            state = JobState.PAUSED;
+        }
     }
 
     public void resume(){
-        state = JobState.RUNNING;
+        if(!isDone()) {
+            state = JobState.RUNNING;
+        }
     }
 
     /**
@@ -391,7 +395,7 @@ public class MagellanJob {
             //System.out.println("[" + jobID + "] Picked random location");
             location = "";
         }
-        System.out.println("Picked new Assignment. Location is " + location);
+
         // TODO Need to pick a tempearture here. According to internet this should actually be the cooling rate
         return packTaskData(taskTime, taskName, location, taskId, job_data);
     }
