@@ -232,6 +232,7 @@ public class MagellanJob {
      * @param data
      */
     public void processIncomingMessages(String data) {
+
         // Retrieve the data sent by the executor
         JSONObject js = new JSONObject(data);
         double fitness_score = js.getDouble(MagellanTaskDataJsonTag.FITNESS_SCORE);
@@ -298,7 +299,7 @@ public class MagellanJob {
         jsonObj.put("job_name", getJobName());
         jsonObj.put("job_starting_temp", getJobStartingTemp());
         jsonObj.put("job_cooling_rate", getJobCoolingRate());
-        jsonObj.put("job_count", getJobCount());
+        jsonObj.put("job_count", getJobIterations());
         jsonObj.put("task_seconds", getTaskTime());
         jsonObj.put("task_name", getJobTaskName());
         jsonObj.put("best_location", getBestLocation());
@@ -407,7 +408,7 @@ public class MagellanJob {
 
     public double getJobCoolingRate(){ return jobCoolingRate; }
 
-    public double getJobCount(){ return jobIterationsPerTemp; }
+    public double getJobIterations(){ return jobIterationsPerTemp; }
 
     public double getTaskTime(){ return jobTaskTime; }
 

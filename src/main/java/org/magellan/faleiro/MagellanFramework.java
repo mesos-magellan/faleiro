@@ -53,6 +53,8 @@ public class MagellanFramework {
                     // Find which job this task is associated with at forward the message to it
                     try {
                         String data = new String(taskStatus.getData().toByteArray(), "UTF-8");
+                        System.out.println("data " + data);
+                        System.out.flush();
                         String taskID = recoverTaskId(data);
 
                         // Process the result of the task by forwarding the data to the job
