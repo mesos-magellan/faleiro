@@ -9,14 +9,14 @@ import java.util.List;
 
 public class MagellanTaskRequest implements TaskRequest {
 
-    String m_id;
-    String m_name;
-    double m_cpus;
-    double m_netMbps;
-    double m_disk;
-    int m_ports;
-    double m_mem;
-    ByteString m_data;
+    private String m_id;
+    private String m_name;
+    private double m_cpus;
+    private double m_netMbps;
+    private double m_disk;
+    private int m_ports;
+    private double m_mem;
+    private ByteString m_data;
 
     MagellanTaskRequest(String  id,
                         String name,

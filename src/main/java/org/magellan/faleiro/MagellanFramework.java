@@ -303,7 +303,7 @@ public class MagellanFramework {
             while(it.hasNext()){
                 Map.Entry pair = (Map.Entry)it.next();
                 MagellanJob j = (MagellanJob) pair.getValue();
-                if(j.getStatus() == MagellanJob.JobState.RUNNING){
+                if(j.getState() == MagellanJob.JobState.RUNNING){
                     ArrayList<MagellanTaskRequest> pending = j.getPendingTasks();
                     for(MagellanTaskRequest request : pending){
                         pendingTasksMap.put(request.getId(),request);
@@ -493,21 +493,7 @@ public class MagellanFramework {
             return null;
         }
 
-        JSONObject jsonObj = new JSONObject();
-        jsonObj.put("job_id", mj.getJobID());
-        jsonObj.put("job_name", mj.getJobName());
-        jsonObj.put("job_starting_temp", mj.getJobStartingTemp());
-        jsonObj.put("job_cooling_rate", mj.getJobCoolingRate());
-        jsonObj.put("job_count", mj.getJobCount());
-        jsonObj.put("task_seconds",mj.getTaskTime());
-        jsonObj.put("task_name", mj.getJobTaskName());
-        jsonObj.put("best_location", mj.getBestLocation());
-        jsonObj.put("best_energy", mj.getBestEnergy());
-        jsonObj.put("energy_history", mj.getEnergyHistory());
-        jsonObj.put("num_running_tasks", mj.getNumTasksSent() - mj.getNumFinishedTasks());
-        jsonObj.put("num_finished_tasks", mj.getNumFinishedTasks());
-        jsonObj.put("num_total_tasks", mj.getNumTotalTasks());
-        return jsonObj;
+        return mj.getClientFriendlyStatus();
     }
 
     /**
