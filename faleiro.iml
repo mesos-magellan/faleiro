@@ -58,5 +58,13 @@
     <orderEntry type="library" name="Maven: org.json:json:20151123" level="project" />
     <orderEntry type="library" name="Maven: junit:junit:4.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.mockito:mockito-all:1.10.19" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix:atomix-resource:1.0.0-rc1" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix.copycat:copycat-client:1.0.0-rc1" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix.copycat:copycat-protocol:1.0.0-rc1" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-transport:1.0.0" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-common:1.0.0" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-serializer:1.0.0" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-buffer:1.0.0" level="project" />
+    <orderEntry type="library" name="Maven: io.atomix.copycat:copycat-server:1.0.0-rc1" level="project" />
   </component>
 </module>

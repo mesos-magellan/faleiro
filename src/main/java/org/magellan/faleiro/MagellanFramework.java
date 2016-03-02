@@ -8,8 +8,10 @@ import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
+import org.apache.zookeeper.ZooKeeper;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -286,6 +288,14 @@ public class MagellanFramework {
         System.out.println("Running all");
         List<VirtualMachineLease> newLeases = new ArrayList<>();
         List<TaskRequest> newTaskRequests = new ArrayList<>();
+
+
+        try {
+            ZooKeeper zk = new ZooKeeper("127.0.0.1:2181",10000,null);
+            DataMonitor dm  = new DataMonitor(zk, "/faleiro",null, null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         while(true) {
             // Only if the framework has shutdown do we exist our main loop
