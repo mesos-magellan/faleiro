@@ -1,5 +1,7 @@
 package org.magellan.faleiro;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.ByteString;
 import org.apache.mesos.Protos;
 import org.json.JSONObject;
@@ -15,13 +17,13 @@ public class MagellanJob {
 
     // These constants are used to tell the framework how much of each
     // resource each task created by this job needs to execute
-    private final double TEMP_MIN = 0;
-    private final double NUM_CPU = 1;
-    private final double NUM_MEM = 32;
-    private final double NUM_NET_MBPS = 0;
-    private final double NUM_DISK = 0;
-    private final int NUM_PORTS = 0;
-    private final int NUM_SIMULTANEOUS_TASKS = 10; // The maximum number of tasks that this task can create at a time
+    private final double TEMP_MIN;
+    private final double NUM_CPU;
+    private final double NUM_MEM;
+    private final double NUM_NET_MBPS;
+    private final double NUM_DISK;
+    private final int NUM_PORTS;
+    private final int NUM_SIMULTANEOUS_TASKS; // The maximum number of tasks that this task can create at a time
 
     private final long jobID;
 
@@ -78,7 +80,7 @@ public class MagellanJob {
     // Each job is limited to sending out a certain number of tasks at a time. Currently, this is
     // hardcoded to 10 but in time, this number should dynamically change depending on the number
     // of jobs running in the system.
-    private AtomicInteger numFreeTaskSlotsLeft = new AtomicInteger(NUM_SIMULTANEOUS_TASKS);
+    private AtomicInteger numFreeTaskSlotsLeft;
 
     private JobState state = JobState.INITIALIZED;
 
@@ -118,6 +120,59 @@ public class MagellanJob {
         taskExecutor = registerExecutor("/usr/local/bin/enrique");
         numTotalTasks = (int)(jStartingTemp/jCoolingRate)*jCount + ((jStartingTemp%jCoolingRate!=0)?1:0);
 
+        TEMP_MIN = 0;
+        NUM_CPU = 1;
+        NUM_MEM = 32;
+        NUM_NET_MBPS = 0;
+        NUM_DISK = 0;
+        NUM_PORTS = 0;
+        NUM_SIMULTANEOUS_TASKS = 10;
+        currentTemp = jobStartingTemp;
+        currentIteration = 0;
+
+        numFreeTaskSlotsLeft = new AtomicInteger(NUM_SIMULTANEOUS_TASKS);
+
+    }
+
+    /**
+     *
+     * @param j : JSONObject from zookeeper used for creating a new job on this framework based on
+     *            the state of a job from another, deceased framework
+     */
+    public MagellanJob(JSONObject j){
+
+        //Reload constants
+        TEMP_MIN = j.getDouble("temp_min");
+        NUM_CPU = j.getDouble("num_cpu");
+        NUM_MEM = j.getDouble("num_mem");
+        NUM_NET_MBPS = j.getDouble("num_net_mbps");
+        NUM_DISK = j.getDouble("num_disk");
+        NUM_PORTS = j.getInt("num_ports");
+        NUM_SIMULTANEOUS_TASKS = j.getInt("num_simultaneous_tasks");
+
+        currentIteration = j.getDouble("current_iteration");
+        jobID = j.getInt("job_id");
+        jobName = j.getString("job_name");
+        jobStartingTemp = j.getDouble("job_starting_temp");
+        jobCoolingRate = j.getDouble("job_cooling_rate");
+        jobIterationsPerTemp = j.getInt("job_count");
+        jobTaskTime = j.getInt("task_seconds");
+        jobTaskName = j.getString("task_name");
+        jobCurrentBestSolution = j.getString("best_location");
+        jobBestEnergy = j.getDouble("best_energy");
+        energyHistory = (new Gson()).fromJson(j.getString("energy_history"), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
+        numFinishedTasks = j.getInt("num_finished_tasks");
+        numTasksSent = numFinishedTasks;
+        numTotalTasks = j.getInt("num_total_tasks");
+        jobAdditionalParam = j.getJSONObject("additional_params");
+        state = (new Gson()).fromJson(j.getString("current_state"), JobState.class);
+        currentTemp = jobStartingTemp - (numFinishedTasks/jobIterationsPerTemp) * jobCoolingRate;
+
+
+        numFreeTaskSlotsLeft = new AtomicInteger(NUM_SIMULTANEOUS_TASKS);
+        taskExecutor = registerExecutor("/usr/local/bin/enrique");
+        System.out.println("Created new job from zookeeper. State is " + state);
+
     }
 
     /**
@@ -154,10 +209,10 @@ public class MagellanJob {
      * of the best solution are evaluated thoroughly in the hopes that they lie close to the global maximum.
      */
     private void run() {
-        currentTemp = jobStartingTemp;
 
         while (currentTemp > TEMP_MIN) {
-            currentIteration = 0;
+            System.out.println("Temp is " + currentTemp);
+
             while(currentIteration < jobIterationsPerTemp) {
                 if(state == JobState.STOP) {
                     return;
@@ -194,6 +249,7 @@ public class MagellanJob {
                 }
                 currentIteration++;
             }
+            currentIteration = 0;
             // Depreciate the temperature
             currentTemp = currentTemp - jobCoolingRate;
         }
@@ -235,8 +291,8 @@ public class MagellanJob {
 
         // Retrieve the data sent by the executor
         JSONObject js = new JSONObject(data);
-        double fitness_score = js.getDouble(MagellanTaskDataJsonTag.FITNESS_SCORE);
-        String best_location = js.getString(MagellanTaskDataJsonTag.BEST_LOCATION);
+        double fitness_score = js.getDouble(TaskDataJsonTag.FITNESS_SCORE);
+        String best_location = js.getString(TaskDataJsonTag.BEST_LOCATION);
 
         numFreeTaskSlotsLeft.getAndIncrement();
         numFinishedTasks++;
@@ -304,7 +360,7 @@ public class MagellanJob {
         jsonObj.put("task_name", getJobTaskName());
         jsonObj.put("best_location", getBestLocation());
         jsonObj.put("best_energy", getBestEnergy());
-        jsonObj.put("energy_history", getEnergyHistory());
+        jsonObj.put("energy_history", new Gson().toJson(getEnergyHistory()));
         jsonObj.put("num_running_tasks", getNumTasksSent() - getNumFinishedTasks());
         jsonObj.put("num_finished_tasks", getNumFinishedTasks());
         jsonObj.put("num_total_tasks", getNumTotalTasks());
@@ -325,19 +381,19 @@ public class MagellanJob {
      */
     private ByteString packTaskData(int taskTime, String taskName, String location, String id, JSONObject job_data){
         JSONObject json = new JSONObject();
-        json.put(MagellanTaskDataJsonTag.UID, id);
-        json.put(MagellanTaskDataJsonTag.TASK_SECONDS, taskTime);
-        json.put(MagellanTaskDataJsonTag.JOB_DATA, job_data);
-        json.put(MagellanTaskDataJsonTag.TASK_NAME, taskName);
-        json.put(MagellanTaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
+        json.put(TaskDataJsonTag.UID, id);
+        json.put(TaskDataJsonTag.TASK_SECONDS, taskTime);
+        json.put(TaskDataJsonTag.JOB_DATA, job_data);
+        json.put(TaskDataJsonTag.TASK_NAME, taskName);
+        json.put(TaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
 
         // If location is null, then we want the task to start at a random value.
         if(location == jobCurrentBestSolution) {
-            json.put(MagellanTaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
-            json.put(MagellanTaskDataJsonTag.LOCATION, location);
+            json.put(TaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
+            json.put(TaskDataJsonTag.LOCATION, location);
         } else {
-            json.put(MagellanTaskDataJsonTag.FITNESS_SCORE, "");
-            json.put(MagellanTaskDataJsonTag.LOCATION, location);
+            json.put(TaskDataJsonTag.FITNESS_SCORE, "");
+            json.put(TaskDataJsonTag.LOCATION, location);
         }
         return ByteString.copyFromUtf8(json.toString());
     }

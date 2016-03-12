@@ -1,7 +1,7 @@
 package org.magellan.faleiro;
 
 
-public class MagellanTaskDataJsonTag {
+public class TaskDataJsonTag {
     public static final String LOCATION = "location";
     public static final String UID = "uid";
     public static final String TASK_SECONDS = "task_seconds";

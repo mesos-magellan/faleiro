@@ -8,7 +8,10 @@ import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -18,7 +21,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class MagellanFramework {
+public class MagellanFramework implements Watcher {
+
 
     class MagellanScheduler implements Scheduler {
 
@@ -98,9 +102,10 @@ public class MagellanFramework {
 
     private TaskScheduler fenzoScheduler;
     private MesosSchedulerDriver mesosSchedulerDriver;
-    private boolean initialized = false;
+    private DataMonitor dataMonitor = null;
+    //private boolean initialized = false;
     private  long numCreatedJobs = 0;
-    private final AtomicBoolean frameworkHasShutdown = new AtomicBoolean(true);
+    //private final AtomicBoolean frameworkHasShutdown = new AtomicBoolean(true);
     private final AtomicReference<MesosSchedulerDriver> mesosDriver = new AtomicReference<>();
     private final ConcurrentHashMap<Long, MagellanJob> jobsList = new ConcurrentHashMap<>();
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
@@ -128,8 +133,8 @@ public class MagellanFramework {
     public Protos.Status shutdownFramework() {
         System.out.println("Shutting down mesos driver");
         Protos.Status status = mesosSchedulerDriver.stop();
-        frameworkHasShutdown.set(true);
-        initialized = false;
+        //frameworkHasShutdown.set(true);
+        //initialized = false;
         return status;
     }
 
@@ -142,9 +147,10 @@ public class MagellanFramework {
      */
     public void initializeFramework(String mesosMasterIP){
         // Dont initialize while running
-        if(!frameworkHasShutdown.get()){
+        /*if(!frameworkHasShutdown.get()){
             return;
-        }
+        }*/
+
 
         Scheduler mesosScheduler = new MagellanScheduler();
 
@@ -187,9 +193,50 @@ public class MagellanFramework {
                     mesosMasterIP,
                     true);
         }
+
+
+        // Connect to zookeeper node
+        try {
+            String zAddr = System.getenv("ZK_IP") + ":" + System.getenv("ZK_PORT");
+            ZooKeeper zk = new ZooKeeper(zAddr,10000,this);
+            dataMonitor  = new DataMonitor(zk, System.getenv("ZKNODE_PATH") ,null, null, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //Retrieve previous state of scheduler if it exists and intialize the scheduler
+        //with this
+        JSONObject pstate = dataMonitor.getInitialState();
+        if(pstate != null){
+            restorePreviousState(pstate);
+        }
+
         mesosDriver.set(mesosSchedulerDriver);
-        frameworkHasShutdown.set(false);
-        initialized = true;
+        //frameworkHasShutdown.set(false);
+        //initialized = true;
+    }
+
+    /**
+     * If a previous state for the scheduler exists, restore it
+     * @param jso : JSonObject from Zookeeper that contains all the necessary information about a job.
+     */
+    private void restorePreviousState(JSONObject jso){
+        numCreatedJobs = jso.getInt("num_created_jobs");
+
+        JSONArray jobs = jso.getJSONArray("jobs");
+        for(int i = 0; i < jobs.length(); i++){
+            JSONObject jsonobject = jobs.getJSONObject(i);
+            jobsList.put(jsonobject.getLong("job_id"),new MagellanJob(jsonobject));
+        }
+
+    }
+
+
+    @Override
+    public void process(WatchedEvent watchedEvent) {
+        if(dataMonitor!=null) {
+            dataMonitor.process(watchedEvent);
+        }
     }
 
 
@@ -200,15 +247,17 @@ public class MagellanFramework {
      * Call to this method is ignored if the framework is not initialized by a previous
      * call to initializeFramework() or if the framework is already running.
      */
+
     public void startFramework(){
-        if(!initialized){
+        System.out.println("Here1");
+        /*if(!initialized){
             System.err.println("Initialize the framework first using MagellanFramework::initialize() before calling this method");
             return;
         }
 
         if(!frameworkHasShutdown.get()) {
             System.err.println("Framework is already running");
-        }
+        }*/
 
         // Start the driver
         new Thread() {
@@ -222,6 +271,23 @@ public class MagellanFramework {
         new Thread(() -> {
             runFramework();
         }).start();
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // Start any jobs that we restored from Zookeeper
+        Iterator it = jobsList.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry pair = (Map.Entry)it.next();
+            MagellanJob j = (MagellanJob) pair.getValue();
+            if(j.getState() == MagellanJob.JobState.RUNNING || j.getState() == MagellanJob.JobState.INITIALIZED)
+            {
+                j.start();
+            }
+        }
 
     }
 
@@ -285,24 +351,16 @@ public class MagellanFramework {
      *  to the Mesos Driver for execution.
      */
     private void runFramework(){
-        System.out.println("Running all");
+        System.out.println("Running Framework");
         List<VirtualMachineLease> newLeases = new ArrayList<>();
         List<TaskRequest> newTaskRequests = new ArrayList<>();
 
-
-        try {
-            ZooKeeper zk = new ZooKeeper("127.0.0.1:2181",10000,null);
-            DataMonitor dm  = new DataMonitor(zk, "/faleiro",null, null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         while(true) {
             // Only if the framework has shutdown do we exist our main loop
-            if(frameworkHasShutdown.get()) {
+            /*if(frameworkHasShutdown.get()) {
                 System.out.println("Framework terminated");
                 return;
-            }
+            }*/
 
             // Clear all the local data structures in preparation of a new loop
             newLeases.clear();
@@ -487,7 +545,7 @@ public class MagellanFramework {
      */
     private String recoverTaskId(String data){
         JSONObject o = new JSONObject(data);
-        return (String) o.get(MagellanTaskDataJsonTag.UID);
+        return (String) o.get(TaskDataJsonTag.UID);
     }
 
     /**
@@ -508,6 +566,32 @@ public class MagellanFramework {
         return mj.getClientFriendlyStatus();
     }
 
+    public JSONObject getSystemState(){
+        JSONObject sysState = new JSONObject();
+        sysState.put("num_created_jobs", numCreatedJobs);
+        sysState.put("jobs",getAllJobStatuses());
+        return sysState;
+    }
+
+
+    /**
+     * Returns the status of all jobs as an array of JSONObject. Each JSONObject
+     * contains the information from getJobStatus()
+     * @return
+     */
+    public ArrayList getAllJobStatuses() {
+        ArrayList<JSONObject> statusAll = new ArrayList();
+
+        Iterator it = jobsList.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry pair = (Map.Entry)it.next();
+            MagellanJob j = (MagellanJob) pair.getValue();
+            statusAll.add(j.getStateSnapshot());
+        }
+
+        return statusAll;
+    }
+
     /**
      * Returns true if the job is either done or stopped or if the Job DNE.
      * Returns false if the job is paused or running
@@ -522,24 +606,6 @@ public class MagellanFramework {
         }
 
         return mj.isDone();
-    }
-
-    /**
-     * Returns the status of all jobs as an array of JSONObject. Each JSONObject
-     * contains the information from getJobStatus()
-     * @return
-     */
-    public ArrayList<JSONObject> getAllJobStatuses() {
-        ArrayList<JSONObject> statusAll = new ArrayList<>();
-
-        Iterator it = jobsList.entrySet().iterator();
-        while(it.hasNext()){
-            Map.Entry pair = (Map.Entry)it.next();
-            MagellanJob j = (MagellanJob) pair.getValue();
-            statusAll.add(getJobStatus(j.getJobID()));
-        }
-
-        return statusAll;
     }
 
     /**

@@ -76,5 +76,11 @@
             <artifactId>atomix-resource</artifactId>
             <version>1.0.0-rc1</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.2.2</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>
