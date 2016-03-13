@@ -89,7 +89,7 @@ public class DataMonitor implements Watcher, AsyncCallback.StatCallback {
                 while(true) {
                     try {
                         Thread.sleep(WRITE_DELAY);
-                        writeState(mframework.getSystemState());
+                        writeState(mframework.getVerboseSystemInfo());
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

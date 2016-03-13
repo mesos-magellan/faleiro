@@ -167,7 +167,7 @@ public class Web {
      */
     private static String getJobList(Request req, Response res) {
         res.type("application/json");
-        return framework.getAllJobStatuses().toString();
+        return framework.getSimpleAllJobStatuses().toString();
     }
 
     /**
@@ -219,6 +219,6 @@ public class Web {
         res.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
         res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
 
-        return framework.getJobStatus(jobId).toString();
+        return framework.getSimpleJobStatus(jobId).toString();
     }
 }

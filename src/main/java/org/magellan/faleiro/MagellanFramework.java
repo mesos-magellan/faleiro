@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MagellanFramework implements Watcher {
@@ -549,50 +548,6 @@ public class MagellanFramework implements Watcher {
     }
 
     /**
-     * Returns the state of a job as a JSONObject. This can be sent back to the
-     * customer or used by zookeeper to persist the state of the framework and
-     * jobs in the system
-     * @param jobID
-     * @return JSONObject where the key is attributes that store the state
-     *          of each job
-     */
-    public JSONObject getJobStatus(Long jobID) {
-        MagellanJob mj = jobsList.get(jobID);
-
-        if(mj==null){
-            return null;
-        }
-
-        return mj.getClientFriendlyStatus();
-    }
-
-    public JSONObject getSystemState(){
-        JSONObject sysState = new JSONObject();
-        sysState.put("num_created_jobs", numCreatedJobs);
-        sysState.put("jobs",getAllJobStatuses());
-        return sysState;
-    }
-
-
-    /**
-     * Returns the status of all jobs as an array of JSONObject. Each JSONObject
-     * contains the information from getJobStatus()
-     * @return
-     */
-    public ArrayList getAllJobStatuses() {
-        ArrayList<JSONObject> statusAll = new ArrayList();
-
-        Iterator it = jobsList.entrySet().iterator();
-        while(it.hasNext()){
-            Map.Entry pair = (Map.Entry)it.next();
-            MagellanJob j = (MagellanJob) pair.getValue();
-            statusAll.add(j.getStateSnapshot());
-        }
-
-        return statusAll;
-    }
-
-    /**
      * Returns true if the job is either done or stopped or if the Job DNE.
      * Returns false if the job is paused or running
      * @param jobID
@@ -627,6 +582,72 @@ public class MagellanFramework implements Watcher {
     private void processData(String taskResult, String taskID) {
         long jobId = submittedTaskIdsToJobIds.get(taskID);
         jobsList.get(jobId).processIncomingMessages(taskResult);
+    }
+
+    /**
+     * Returns the status of a job as a JSONObject.
+     * @param jobID
+     * @return JSONObject where the key is attributes that store the state
+     *          of each job
+     */
+    public JSONObject getSimpleJobStatus(Long jobID) {
+        MagellanJob mj = jobsList.get(jobID);
+
+        if(mj==null){
+            return null;
+        }
+
+        return mj.getSimpleStatus();
+    }
+
+    /**
+     * Returns entire state/contents of framework as a JSONObject. Used to persist in zookeeper.
+     * Not for client
+     * @return
+     */
+    public JSONObject getVerboseSystemInfo(){
+        JSONObject sysState = new JSONObject();
+        sysState.put("num_created_jobs", numCreatedJobs);
+        sysState.put("jobs",getVerboseAllJobInfo());
+        return sysState;
+    }
+
+
+    /**
+     * Returns the status of all jobs as an JSONArray. Only returns information pertaining to
+     * problem being sovled. Internal state of Job is not returned
+     * @return
+     */
+    public JSONArray getSimpleAllJobStatuses() {
+        JSONArray statusAll = new JSONArray();
+
+        Iterator it = jobsList.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry pair = (Map.Entry)it.next();
+            MagellanJob j = (MagellanJob) pair.getValue();
+            statusAll.put(j.getSimpleStatus());
+        }
+
+        return statusAll;
+    }
+
+    /**
+     * Returns the status of all jobs as an JSONArray. The information returned for each
+     * job is verbose and is only intended to be used to save state in zookeeper. For a client
+     * friendly version without internal state, use getAllJobStatuses()
+     * @return
+     */
+    private JSONArray getVerboseAllJobInfo() {
+        JSONArray statusAll = new JSONArray();
+
+        Iterator it = jobsList.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry pair = (Map.Entry)it.next();
+            MagellanJob j = (MagellanJob) pair.getValue();
+            statusAll.put(j.getStateSnapshot());
+        }
+
+        return statusAll;
     }
 
 }

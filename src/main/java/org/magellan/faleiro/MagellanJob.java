@@ -322,13 +322,13 @@ public class MagellanJob {
 
     /**
      * Called by the zookeeper service to transfer a snapshot of the current state of the job to save in
-     * case this node goes down. This contains information from getClientFriendlyStatus() as well as
+     * case this node goes down. This contains information from getSimpleStatus() as well as
      * additional, internal information
      *
      * @return A snapshot of all the important information in this job
      */
     public JSONObject getStateSnapshot() {
-        JSONObject jsonObj = getClientFriendlyStatus();
+        JSONObject jsonObj = getSimpleStatus();
         jsonObj.put("current_iteration", currentIteration);
         jsonObj.put("current_temp", currentTemp);
         jsonObj.put("num_tasks_sent", getNumTasksSent());
@@ -349,7 +349,7 @@ public class MagellanJob {
      * This method returns information that the client wants to know about the job
      * @return
      */
-    public JSONObject getClientFriendlyStatus() {
+    public JSONObject getSimpleStatus() {
         JSONObject jsonObj = new JSONObject();
         jsonObj.put("job_id", getJobID());
         jsonObj.put("job_name", getJobName());
