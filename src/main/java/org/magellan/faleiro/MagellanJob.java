@@ -211,7 +211,6 @@ public class MagellanJob {
     private void run() {
 
         while (currentTemp > TEMP_MIN) {
-            System.out.println("Temp is " + currentTemp);
 
             while(currentIteration < jobIterationsPerTemp) {
                 if(state == JobState.STOP) {

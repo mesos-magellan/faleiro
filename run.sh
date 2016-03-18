@@ -8,6 +8,7 @@ export LIBPROCESS_PORT="5055"
 export ZK_IP="127.0.0.1"
 export ZK_PORT="2181"
 export ZKNODE_PATH="/faleiro"
+export ATOMIX_LOGS_DIR="logs"
 echo "************************* BUILDING WITH MAVEN ************************* "
 mvn package $@
 echo "************************* RUNNING FALEIRO ************************* "

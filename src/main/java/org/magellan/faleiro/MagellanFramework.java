@@ -145,10 +145,14 @@ public class MagellanFramework implements Watcher {
      * @param mesosMasterIP     - IP Address of the mesos master
      */
     public void initializeFramework(String mesosMasterIP){
-        // Dont initialize while running
-        /*if(!frameworkHasShutdown.get()){
-            return;
-        }*/
+        // First connect to the cluster of frameworks and undergo leader election.
+        // Inititalization of the framework and connecting to the master should only
+        // happen after this framework is elected as the leader.
+
+        /*LeaderElection leader = new LeaderElection(System.getenv("LIBPROCESS_UP"),
+                                                    Integer.getInteger(System.getenv("LIBPROCESS_PORT")),
+                                                    null);
+        leader.blockUntilElectedLeader();*/
 
 
         Scheduler mesosScheduler = new MagellanScheduler();
@@ -207,12 +211,13 @@ public class MagellanFramework implements Watcher {
         //with this
         JSONObject pstate = dataMonitor.getInitialState();
         if(pstate != null){
+            System.out.println("Restoring previous framework state from Zookeeper");
             restorePreviousState(pstate);
+        }else{
+            System.out.println("No past state found");
         }
 
         mesosDriver.set(mesosSchedulerDriver);
-        //frameworkHasShutdown.set(false);
-        //initialized = true;
     }
 
     /**
@@ -248,7 +253,6 @@ public class MagellanFramework implements Watcher {
      */
 
     public void startFramework(){
-        System.out.println("Here1");
         /*if(!initialized){
             System.err.println("Initialize the framework first using MagellanFramework::initialize() before calling this method");
             return;
@@ -355,11 +359,6 @@ public class MagellanFramework implements Watcher {
         List<TaskRequest> newTaskRequests = new ArrayList<>();
 
         while(true) {
-            // Only if the framework has shutdown do we exist our main loop
-            /*if(frameworkHasShutdown.get()) {
-                System.out.println("Framework terminated");
-                return;
-            }*/
 
             // Clear all the local data structures in preparation of a new loop
             newLeases.clear();

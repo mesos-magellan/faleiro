@@ -48,7 +48,7 @@ public class DataMonitor implements Watcher, AsyncCallback.StatCallback {
             Stat st = zk.exists(znode, true);
 
             if(st != null){
-                System.out.println("Status is " + st.toString());
+                System.out.println("Znode exists. Status is " + st.toString());
                 // This means that the znode exists and might have state that we need to
                 // read back.
                 // Next step is to synchronously retrieve this data from the znode, convert
@@ -59,14 +59,16 @@ public class DataMonitor implements Watcher, AsyncCallback.StatCallback {
                     try {
                         initialState = new JSONObject(new String(retrievedState, "US-ASCII"));
                         prevData = initialState.toString().getBytes("UTF-8");
+                        System.out.println("Discovered state");
                     }catch (JSONException e){
-                        initialState = null;
+                        System.out.println("Exception thrown");
+                         initialState = null;
                         prevData = null;
                     }
                 }
 
             } else {
-                System.out.println("Status is null");
+                System.out.println("ZNode doesn't exist. Creating new one");
                 // This znode doesn't exist so create it.
                 String p = zk.create(znode,new JSONObject().toString().getBytes("UTF-8"), ZooDefs.Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
                 System.out.println("Create path is " + p);
