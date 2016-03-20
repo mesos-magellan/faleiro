@@ -31,7 +31,7 @@ $ supervisorctl
 ### Viewing Logs
 
 * When running with supervisor, output from the server is redirected to logs in `/var/log/faleiro/`.
-* `cd /var/log/faleiro/; grc tail -f stderr.log` to follow
+* `cd /var/log/faleiro/; grc tail -f stdout.log` to follow
 
 ### Managing Instances with Supervisor Web UI
 
