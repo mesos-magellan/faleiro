@@ -14,7 +14,7 @@ public class Web {
         framework = new MagellanFramework();
         framework.initializeFramework(System.getenv("MASTER_ADDRESS"));
         framework.startFramework();
-        initWebRoutes();
+        //initWebRoutes();
     }
 
     private static void initWebRoutes() {
@@ -26,6 +26,7 @@ public class Web {
 
     /**
      * POST /api/job
+     *
      *
      * Request:
      * {

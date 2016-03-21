@@ -18,33 +18,28 @@ public class LeaderElection {
     Object m_lock = new Object();
     Boolean isLeader = false;
 
-    public LeaderElection(String currentAddr, int currentPort, Map<String, String> groupMembers){
+    public LeaderElection(Address localAddr, List<Address> groupMembers){
 
         try {
-            Address localAddr = new Address(currentAddr, currentPort);
-
-            // Build a list of all member addresses to which to connect.
-            List<Address> members = new ArrayList<>();
-            for (Map.Entry<String, String> entry : groupMembers.entrySet()) {
-                members.add(new Address(entry.getKey(), Integer.valueOf(entry.getValue())));
-            }
 
             // Create a stateful Atomix replica. The replica communicates with other replicas in the cluster
             // to replicate state changes.
-            Atomix atomix = AtomixReplica.builder(localAddr, members)
+            Atomix atomix = AtomixReplica.builder(localAddr, groupMembers)
                     .withTransport(new NettyTransport())
-                    .withStorage(new Storage(System.getenv("ATOMIX_LOGS_DIR")))
+                    .withStorage(new Storage(System.getenv("ATOMIX_LOGS_DIR")+"//"+System.getenv("LIBPROCESS_IP")))
                     .build();
 
+            System.out.println("Trying to joinnn");
             // Open the replica. Once this operation completes resources can be created and managed.
             atomix.open().join();
 
+            System.out.println("Joined");
             // Create a leader election resource.
-            DistributedGroup group = atomix.getGroup("group").get();
-
+            DistributedGroup group = atomix.getGroup("election").get();
+            System.out.println("Got group");
             // Join the group.
             LocalGroupMember member = group.join().get();
-
+            System.out.println("Joined local something");
             // Register a callback to be called when the local member is elected the leader.
             group.election().onElection(leader -> {
                 if (leader.equals(member)) {
@@ -57,9 +52,9 @@ public class LeaderElection {
             });
 
             // Block while the replica is open.
-            while (atomix.isOpen()) {
+            /*while (atomix.isOpen()) {
                 Thread.sleep(1000);
-            }
+            }*/
         }catch (InterruptedException e){
             e.printStackTrace();
         } catch (ExecutionException e) {
@@ -69,6 +64,7 @@ public class LeaderElection {
 
 
     public void blockUntilElectedLeader(){
+        System.out.println("Waiting until elected leader");
         synchronized (m_lock){
             try {
                 while(!isLeader) {

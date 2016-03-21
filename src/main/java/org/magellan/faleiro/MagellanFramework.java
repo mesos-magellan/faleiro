@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import com.netflix.fenzo.*;
 import com.netflix.fenzo.functions.Action1;
 import com.netflix.fenzo.plugins.VMLeaseObject;
+import io.atomix.catalyst.transport.Address;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
@@ -149,10 +150,18 @@ public class MagellanFramework implements Watcher {
         // Inititalization of the framework and connecting to the master should only
         // happen after this framework is elected as the leader.
 
-        /*LeaderElection leader = new LeaderElection(System.getenv("LIBPROCESS_UP"),
-                                                    Integer.getInteger(System.getenv("LIBPROCESS_PORT")),
-                                                    null);
-        leader.blockUntilElectedLeader();*/
+        List<Address> members = Arrays.asList(
+                new Address("10.144.144.21", 6055),
+                new Address("10.144.144.22", 6055),
+                new Address("10.144.144.23", 6055)
+        );
+
+        Address current = new Address(System.getenv("LIBPROCESS_IP"),6055);
+
+        System.out.println(System.getenv("LIBPROCESS_IP"));
+        //System.out.println(System.getenv("LIBPROCESS_PORT"));
+        LeaderElection leader = new LeaderElection(current,members);
+        leader.blockUntilElectedLeader();
 
 
         Scheduler mesosScheduler = new MagellanScheduler();
