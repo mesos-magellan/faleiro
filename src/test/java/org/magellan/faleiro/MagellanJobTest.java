@@ -55,6 +55,7 @@ public class MagellanJobTest {
 
     @org.junit.After
     public void tearDown() throws Exception {
+        testBeginning.getTaskExecutor();
 
     }
 
@@ -205,5 +206,25 @@ public class MagellanJobTest {
     @Test
     public void testGetNumTotalTasks() throws Exception {
         assertEquals(testBeginning.getNumTotalTasks(),40);
+    }
+
+    @Test
+    public void testStart() throws Exception {
+
+    }
+
+    @Test
+    public void testGetPendingTasks() throws Exception {
+
+    }
+
+    @Test
+    public void testGetSimpleStatus() throws Exception {
+
+    }
+
+    @Test
+    public void testGetTaskExecutor() throws Exception {
+
     }
 }

@@ -5,6 +5,7 @@ import io.atomix.AtomixReplica;
 import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.NettyTransport;
 import io.atomix.copycat.server.storage.Storage;
+import io.atomix.copycat.server.storage.StorageLevel;
 import io.atomix.group.DistributedGroup;
 import io.atomix.group.LocalGroupMember;
 
@@ -17,29 +18,37 @@ import java.util.concurrent.ExecutionException;
 public class LeaderElection {
     Object m_lock = new Object();
     Boolean isLeader = false;
+    Address localAddr;
+    List<Address> members;
 
     public LeaderElection(Address localAddr, List<Address> groupMembers){
+        this.localAddr = localAddr;
+        this.members = groupMembers;
+    }
 
+    public void connect(){
         try {
 
             // Create a stateful Atomix replica. The replica communicates with other replicas in the cluster
             // to replicate state changes.
-            Atomix atomix = AtomixReplica.builder(localAddr, groupMembers)
+            Atomix atomix = AtomixReplica.builder(localAddr, members)
                     .withTransport(new NettyTransport())
-                    .withStorage(new Storage(System.getenv("ATOMIX_LOGS_DIR")+"//"+System.getenv("LIBPROCESS_IP")))
+                    .withStorage(new Storage(StorageLevel.MEMORY))
                     .build();
 
-            System.out.println("Trying to joinnn");
             // Open the replica. Once this operation completes resources can be created and managed.
             atomix.open().join();
 
             System.out.println("Joined");
+
             // Create a leader election resource.
             DistributedGroup group = atomix.getGroup("election").get();
             System.out.println("Got group");
+
             // Join the group.
             LocalGroupMember member = group.join().get();
             System.out.println("Joined local something");
+
             // Register a callback to be called when the local member is elected the leader.
             group.election().onElection(leader -> {
                 if (leader.equals(member)) {

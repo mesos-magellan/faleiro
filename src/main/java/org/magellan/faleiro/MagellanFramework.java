@@ -152,15 +152,17 @@ public class MagellanFramework implements Watcher {
 
         List<Address> members = Arrays.asList(
                 new Address("10.144.144.21", 6055),
-                new Address("10.144.144.22", 6055),
-                new Address("10.144.144.23", 6055)
+                new Address("10.144.144.22", 6055)
+
+                //new Address("10.144.144.23", 6055)
         );
 
         Address current = new Address(System.getenv("LIBPROCESS_IP"),6055);
 
         System.out.println(System.getenv("LIBPROCESS_IP"));
-        //System.out.println(System.getenv("LIBPROCESS_PORT"));
+
         LeaderElection leader = new LeaderElection(current,members);
+        leader.connect();
         leader.blockUntilElectedLeader();
 
 
