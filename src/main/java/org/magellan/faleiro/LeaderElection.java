@@ -34,6 +34,7 @@ public class LeaderElection {
             Atomix atomix = AtomixReplica.builder(localAddr, members)
                     .withTransport(new NettyTransport())
                     .withStorage(new Storage(StorageLevel.MEMORY))
+                    .addResourceType(DistributedGroup.class)
                     .build();
 
             // Open the replica. Once this operation completes resources can be created and managed.
