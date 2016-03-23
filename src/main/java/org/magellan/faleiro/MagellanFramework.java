@@ -165,10 +165,10 @@ public class MagellanFramework implements Watcher {
 
         System.out.println(System.getenv("LIBPROCESS_IP"));
 
-        LeaderElection leader = new LeaderElection(current,members);
+        /*LeaderElection leader = new LeaderElection(current,members);
         leader.connect();
         leader.blockUntilElectedLeader();
-
+        */
 
         Scheduler mesosScheduler = new MagellanScheduler();
 
