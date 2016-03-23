@@ -3,7 +3,8 @@ package org.magellan.faleiro;
 
 public abstract class JsonTags {
 
-    class TaskData {
+    // JSON tags for messages passed between the executor and scheduler
+    static class TaskData {
         public static final String LOCATION = "location";
         public static final String UID = "uid";
         public static final String TASK_SECONDS = "task_seconds";
@@ -13,7 +14,9 @@ public abstract class JsonTags {
         public static final String TASK_NAME = "task_name";
     }
 
-    class SimpleStatus {
+    // JSON tags for information desired by the client that is related to the status/progress
+    // of the job.
+    static class SimpleStatus {
         public static final String JOB_ID = "job_id";
         public static final String JOB_NAME = "job_name";
         public static final String JOB_STARTING_TEMP = "job_starting_temp";
@@ -31,12 +34,11 @@ public abstract class JsonTags {
         public static final String CURRENT_STATE = "current_state";
     }
 
-    class VerboseStatus {
+    // JSON tags used for persisting internal state of each job in zookeeper
+    static class VerboseStatus {
         public static final String CURRENT_ITERATION = "current_iteration";
         public static final String CURRENT_TEMP = "current_temp";
         public static final String NUM_TASKS_SENT = "num_tasks_sent";
-
-        // Store constants
         public static final String TEMP_MIN = "temp_min";
         public static final String NUM_CPU = "num_cpu";
         public static final String NUM_MEM = "num_mem";

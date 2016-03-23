@@ -21,6 +21,10 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.magellan.faleiro.JsonTags.TaskData;
+import static org.magellan.faleiro.JsonTags.VerboseStatus;
+import static org.magellan.faleiro.JsonTags.SimpleStatus;
+
 public class MagellanFramework implements Watcher {
 
 
@@ -554,7 +558,7 @@ public class MagellanFramework implements Watcher {
      */
     private String recoverTaskId(String data){
         JSONObject o = new JSONObject(data);
-        return (String) o.get(JsonTags.UID);
+        return (String) o.get(TaskData.UID);
     }
 
     /**

@@ -3,6 +3,7 @@ package org.magellan.faleiro;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.ByteString;
+import com.netflix.fenzo.TaskRequest;
 import org.apache.mesos.Protos;
 import org.json.JSONObject;
 
@@ -13,7 +14,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.magellan.faleiro.JsonTags.*;
+import static org.magellan.faleiro.JsonTags.TaskData;
+import static org.magellan.faleiro.JsonTags.VerboseStatus;
+import static org.magellan.faleiro.JsonTags.SimpleStatus;
 
 public class MagellanJob {
 
@@ -292,8 +295,8 @@ public class MagellanJob {
 
         // Retrieve the data sent by the executor
         JSONObject js = new JSONObject(data);
-        double fitness_score = js.getDouble(JsonTags.FITNESS_SCORE);
-        String best_location = js.getString(JsonTags.BEST_LOCATION);
+        double fitness_score = js.getDouble(TaskData.FITNESS_SCORE);
+        String best_location = js.getString(TaskData.BEST_LOCATION);
 
         numFreeTaskSlotsLeft.getAndIncrement();
         numFinishedTasks++;
@@ -382,19 +385,19 @@ public class MagellanJob {
      */
     private ByteString packTaskData(int taskTime, String taskName, String location, String id, JSONObject job_data){
         JSONObject json = new JSONObject();
-        json.put(JsonTags.UID, id);
-        json.put(JsonTags.TASK_SECONDS, taskTime);
-        json.put(JsonTags.JOB_DATA, job_data);
-        json.put(JsonTags.TASK_NAME, taskName);
-        json.put(JsonTags.FITNESS_SCORE, jobBestEnergy);
+        json.put(TaskData.UID, id);
+        json.put(TaskData.TASK_SECONDS, taskTime);
+        json.put(TaskData.JOB_DATA, job_data);
+        json.put(TaskData.TASK_NAME, taskName);
+        json.put(TaskData.FITNESS_SCORE, jobBestEnergy);
 
         // If location is null, then we want the task to start at a random value.
         if(location == jobCurrentBestSolution) {
-            json.put(JsonTags.FITNESS_SCORE, jobBestEnergy);
-            json.put(JsonTags.LOCATION, location);
+            json.put(TaskData.FITNESS_SCORE, jobBestEnergy);
+            json.put(TaskData.LOCATION, location);
         } else {
-            json.put(JsonTags.FITNESS_SCORE, "");
-            json.put(JsonTags.LOCATION, location);
+            json.put(TaskData.FITNESS_SCORE, "");
+            json.put(TaskData.LOCATION, location);
         }
         return ByteString.copyFromUtf8(json.toString());
     }
