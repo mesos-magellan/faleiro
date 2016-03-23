@@ -1,13 +1,11 @@
 package org.magellan.faleiro;
 
+import org.apache.mesos.Protos;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by koushik on 19/02/16.
- */
 public class MagellanJobTest {
 
 
@@ -55,17 +53,20 @@ public class MagellanJobTest {
 
     @org.junit.After
     public void tearDown() throws Exception {
-        testBeginning.getTaskExecutor();
 
     }
 
     @Test
     public void testRegisterExecutor() throws Exception {
+        Protos.ExecutorInfo executorInfo = testBeginning.registerExecutor(System.getenv("EXECUTOR_PATH"));
+        Protos.ExecutorInfo mExecutorInfo = testBeginning.getTaskExecutor();
 
+        // Only really care about location of executor
+        assertTrue(mExecutorInfo.getCommand().getValue().equals(executorInfo.getCommand().getValue()));
     }
 
     //@Test
-    /*public void testGetPendingTasks() throws Exception {
+    public void testGetPendingTasks() throws Exception {
         testBeginning.start();
 
         //Give the job some time to run
@@ -88,7 +89,7 @@ public class MagellanJobTest {
 
         //Job should have one more task ready for scheduling
         assertEquals(testBeginning.getPendingTasks().size(),1);
-    }*/
+    }
 
 
     @Test
@@ -98,7 +99,16 @@ public class MagellanJobTest {
 
     @Test
     public void testProcessIncomingMessages() throws Exception {
+        JSONObject jso = new JSONObject();
+        jso.put(JsonTags.FITNESS_SCORE,"1234");
+        jso.put(JsonTags.BEST_LOCATION, "1234");
 
+        int prevFinishedTasks = testBeginning.getNumFinishedTasks();
+        int prevHistorySize = testBeginning.getEnergyHistory().size();
+        testBeginning.processIncomingMessages(jso.toString());
+
+        assertEquals(prevFinishedTasks + 1,testBeginning.getNumFinishedTasks());
+        assertEquals(prevHistorySize + 1, testBeginning.getEnergyHistory().size());
     }
 
     @Test
@@ -128,8 +138,9 @@ public class MagellanJobTest {
     }
 
     @Test
-    public void testGetClientFriendlyStatus() throws Exception {
-        //assertTrue(false);
+    public void testGetSimpleStatus() throws Exception {
+        JSONObject simple = testBeginning.getSimpleStatus();
+        assertEquals(simple.get(""),3,0);
     }
 
     @Test
@@ -210,16 +221,6 @@ public class MagellanJobTest {
 
     @Test
     public void testStart() throws Exception {
-
-    }
-
-    @Test
-    public void testGetPendingTasks() throws Exception {
-
-    }
-
-    @Test
-    public void testGetSimpleStatus() throws Exception {
 
     }
 

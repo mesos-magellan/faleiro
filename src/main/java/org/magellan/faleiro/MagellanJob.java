@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.magellan.faleiro.JsonTags.*;
+
 public class MagellanJob {
 
     // These constants are used to tell the framework how much of each
@@ -117,7 +119,7 @@ public class MagellanJob {
         jobTaskTime = taskTime;
         jobTaskName = taskName;
         jobAdditionalParam = jso;
-        taskExecutor = registerExecutor("/usr/local/bin/enrique");
+        taskExecutor = registerExecutor(System.getenv("EXECUTOR_PATH"));
         numTotalTasks = (int)(jStartingTemp/jCoolingRate)*jCount + ((jStartingTemp%jCoolingRate!=0)?1:0);
 
         TEMP_MIN = 0;
@@ -290,8 +292,8 @@ public class MagellanJob {
 
         // Retrieve the data sent by the executor
         JSONObject js = new JSONObject(data);
-        double fitness_score = js.getDouble(TaskDataJsonTag.FITNESS_SCORE);
-        String best_location = js.getString(TaskDataJsonTag.BEST_LOCATION);
+        double fitness_score = js.getDouble(JsonTags.FITNESS_SCORE);
+        String best_location = js.getString(JsonTags.BEST_LOCATION);
 
         numFreeTaskSlotsLeft.getAndIncrement();
         numFinishedTasks++;
@@ -380,19 +382,19 @@ public class MagellanJob {
      */
     private ByteString packTaskData(int taskTime, String taskName, String location, String id, JSONObject job_data){
         JSONObject json = new JSONObject();
-        json.put(TaskDataJsonTag.UID, id);
-        json.put(TaskDataJsonTag.TASK_SECONDS, taskTime);
-        json.put(TaskDataJsonTag.JOB_DATA, job_data);
-        json.put(TaskDataJsonTag.TASK_NAME, taskName);
-        json.put(TaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
+        json.put(JsonTags.UID, id);
+        json.put(JsonTags.TASK_SECONDS, taskTime);
+        json.put(JsonTags.JOB_DATA, job_data);
+        json.put(JsonTags.TASK_NAME, taskName);
+        json.put(JsonTags.FITNESS_SCORE, jobBestEnergy);
 
         // If location is null, then we want the task to start at a random value.
         if(location == jobCurrentBestSolution) {
-            json.put(TaskDataJsonTag.FITNESS_SCORE, jobBestEnergy);
-            json.put(TaskDataJsonTag.LOCATION, location);
+            json.put(JsonTags.FITNESS_SCORE, jobBestEnergy);
+            json.put(JsonTags.LOCATION, location);
         } else {
-            json.put(TaskDataJsonTag.FITNESS_SCORE, "");
-            json.put(TaskDataJsonTag.LOCATION, location);
+            json.put(JsonTags.FITNESS_SCORE, "");
+            json.put(JsonTags.LOCATION, location);
         }
         return ByteString.copyFromUtf8(json.toString());
     }

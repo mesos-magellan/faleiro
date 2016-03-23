@@ -554,7 +554,7 @@ public class MagellanFramework implements Watcher {
      */
     private String recoverTaskId(String data){
         JSONObject o = new JSONObject(data);
-        return (String) o.get(TaskDataJsonTag.UID);
+        return (String) o.get(JsonTags.UID);
     }
 
     /**
