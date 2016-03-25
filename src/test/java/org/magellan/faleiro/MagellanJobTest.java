@@ -15,11 +15,7 @@ import static org.magellan.faleiro.JsonTags.SimpleStatus;
 import static org.junit.Assert.*;
 
 public class MagellanJobTest {
-
-
     MagellanJob testBeginning;
-    MagellanJob testMiddle;
-    MagellanJob testEnd;
 
     boolean initialized = false;
 
@@ -33,29 +29,6 @@ public class MagellanJobTest {
                                         10,                 // Task time
                                         "task_tester",      // task name
                                         null);              // additional parameters
-
-        if(!initialized) {
-            testMiddle = new MagellanJob(3,                  // Id
-                    "tester",           // Job name
-                    10,                 // Starting Temp
-                    0.5,                // Cooling rate
-                    2,                  // Iterations per temp
-                    10,                 // Task time
-                    "task_tester",      // task name
-                    null);              // additional parameters
-            testMiddle.start();
-
-            testEnd = new MagellanJob(3,                  // Id
-                    "tester",           // Job name
-                    10,                 // Starting Temp
-                    0.5,                // Cooling rate
-                    2,                  // Iterations per temp
-                    10,                 // Task time
-                    "task_tester",      // task name
-                    null);              // additional parameters
-
-        }
-        initialized = true;
 
     }
 
@@ -142,7 +115,17 @@ public class MagellanJobTest {
 
     @Test
     public void testGetStateSnapshot() throws Exception {
-
+        JSONObject state = testBeginning.getStateSnapshot();
+        assertEquals((Double) state.get(VerboseStatus.CURRENT_ITERATION), 0, 0);
+        assertEquals((Double) state.get(VerboseStatus.CURRENT_TEMP), 10, 0);
+        assertEquals((Integer) state.get(VerboseStatus.NUM_TASKS_SENT), 0, 0);
+        assertEquals((Double) state.get(VerboseStatus.TEMP_MIN), 0, 0);
+        assertEquals((Double) state.get(VerboseStatus.NUM_CPU), 1, 0);
+        assertEquals((Double) state.get(VerboseStatus.NUM_MEM), 32, 0);
+        assertEquals((Double) state.get(VerboseStatus.NUM_NET_MBPS), 0, 0);
+        assertEquals((Double) state.get(VerboseStatus.NUM_DISK), 0, 0);
+        assertEquals((Integer) state.get(VerboseStatus.NUM_PORTS), 0, 0);
+        assertEquals((Integer) state.get(VerboseStatus.NUM_SIMULTANEOUS_TASKS), 10, 0);
     }
 
     @Test
@@ -154,7 +137,6 @@ public class MagellanJobTest {
         assertEquals((Double) simple.get(SimpleStatus.TASK_SECONDS),10,0);
         assertEquals((String)simple.get(SimpleStatus.TASK_NAME),"task_tester");
         assertEquals((String)simple.get(SimpleStatus.BEST_LOCATION),"");
-
         ConcurrentLinkedDeque eh = (new Gson()).fromJson(simple.getString(SimpleStatus.ENERGY_HISTORY), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
         assertTrue(eh.size() == 0);
         assertEquals((Integer) simple.get(SimpleStatus.NUM_FINISHED_TASKS),0,0);
@@ -163,6 +145,7 @@ public class MagellanJobTest {
             Double p = (Double) simple.get(SimpleStatus.ADDITIONAL_PARAMS);
             assertTrue(false);
         }catch (Exception e){
+
         }
 
         assertEquals((MagellanJob.JobState) simple.get(SimpleStatus.CURRENT_STATE), MagellanJob.JobState.INITIALIZED);
