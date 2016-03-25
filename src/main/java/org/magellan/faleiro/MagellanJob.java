@@ -3,7 +3,6 @@ package org.magellan.faleiro;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.ByteString;
-import com.netflix.fenzo.TaskRequest;
 import org.apache.mesos.Protos;
 import org.json.JSONObject;
 
@@ -138,7 +137,6 @@ public class MagellanJob {
         currentIteration = 0;
 
         numFreeTaskSlotsLeft = new AtomicInteger(NUM_SIMULTANEOUS_TASKS);
-
     }
 
     /**
