@@ -71,7 +71,6 @@
             <artifactId>mockito-all</artifactId>
             <version>1.10.19</version>
         </dependency>
-
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>

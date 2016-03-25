@@ -13,15 +13,16 @@ public class Web {
     private static MagellanFramework framework;
 
     public static void main(String[] args) {
-        init();
+        MagellanFramework mf = new MagellanFramework();
+        initFramework(mf);
+        initWebRoutes();
     }
 
-    public static void init() {
+    public static void initFramework(MagellanFramework mf) {
         log.log(Level.INFO, "Initializing MagellanFramework");
-        framework = new MagellanFramework();
+        framework = mf;
         framework.initializeFramework(System.getenv("MASTER_ADDRESS"));
         framework.startFramework();
-        initWebRoutes();
     }
 
     private static void initWebRoutes() {
@@ -82,7 +83,7 @@ public class Web {
                 || request.isNull("job_time")
                 || request.isNull("module_url")) {
             response.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "createJobResponse(422) : " + response.getString("message"), request);
+            log.log(Level.WARNING, "(422) : " + response.getString("message"), request);
             return 422;
         }
 
@@ -102,11 +103,11 @@ public class Web {
 
         if(jobId < 0) {
             response.put("message", "Failed to create job internally");
-            log.log(Level.WARNING, "createJobResponse(500) : " + response.getString("message"), request);
+            log.log(Level.WARNING, "(500) : " + response.getString("message"), request);
             return 500;
         } else {
             response.put("job_id", jobId);
-            log.log(Level.FINE, "createJobResponse : Create job ID: " + jobId, request);
+            log.log(Level.FINE, "Create job ID: " + jobId, request);
             return 200;
         }
     }
@@ -151,7 +152,7 @@ public class Web {
 
         if(!req.params().containsKey(":job_id")) {
             jsonRes.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "updateJobStatus(422) : " + jsonRes.getString("message"), req);
+            log.log(Level.WARNING, "(422) : " + jsonRes.getString("message"), req);
             res.status(422);
             return jsonRes.toString();
         }
@@ -164,7 +165,7 @@ public class Web {
     public static Integer updateJobStatusResponse(final JSONObject request, JSONObject response, String job_id) {
         if(request.isNull("status")) {
             response.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "updateJobStatusResponse(422) : " + response.getString("message") + " Job ID : " + job_id, request);
+            log.log(Level.WARNING, "(422) : " + response.getString("message") + " Job ID : " + job_id, request);
             return 422;
         }
 
@@ -183,11 +184,11 @@ public class Web {
                 break;
             default:
                 response.put("message", "Invalid parameter value");
-                log.log(Level.WARNING, "updateJobStatusResponse(422) : " + response.getString("message") + " Job ID : " + job_id, request);
+                log.log(Level.WARNING, "(422) : " + response.getString("message") + " Job ID : " + job_id, request);
                 return 422;
         }
 
-        log.log(Level.FINE, "updateJobStatusResponse : Job ID: " + jobId + " set to " + status, request);
+        log.log(Level.FINE, "Job ID: " + jobId + " set to " + status, request);
         return 200;
     }
 
@@ -279,7 +280,7 @@ public class Web {
             JSONObject jsonRes = new JSONObject();
             res.status(422);
             jsonRes.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "getJob(422) : " + jsonRes.getString("message"), req);
+            log.log(Level.WARNING, "(422) : " + jsonRes.getString("message"), req);
             return jsonRes.toString();
         }
 
@@ -295,7 +296,7 @@ public class Web {
             status = 202;
         }
         response.put("response", framework.getSimpleJobStatus(jobId));
-        log.log(Level.FINE, "getJobResponse() : Got job details for ID : " + job_id + " status code is " + status , response);
+        log.log(Level.FINE, "Got job details for ID : " + job_id + " status code is " + status , response);
         return status;
     }
 }

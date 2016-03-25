@@ -6,22 +6,40 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
-/**
- * Created by dylan on 2016-03-22.
- */
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class WebTest {
 
-    private Integer JobID;
+    public void InitWorkingFramework(boolean IsJobDone) {
+        MagellanFramework mf = mock(MagellanFramework.class);
 
-    public WebTest() {
-        Web.init();
-        JobID = -1;
+        doNothing().when(mf).initializeFramework(anyString());
+        doNothing().when(mf).startFramework();
+        doReturn(0L).when(mf).createJob(anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyString(), anyObject());
+        doNothing().when(mf).pauseJob(anyLong());
+        doNothing().when(mf).resumeJob(anyLong());
+        doNothing().when(mf).stopJob(anyLong());
+        doReturn(IsJobDone).when(mf).isDone(anyLong());
+        doReturn(new JSONObject()).when(mf).getSimpleJobStatus(anyLong());
+
+        Web.initFramework(mf);
+    }
+
+    public void InitFailedFramework() {
+        MagellanFramework mf = mock(MagellanFramework.class);
+
+        doNothing().when(mf).initializeFramework(anyString());
+        doNothing().when(mf).startFramework();
+        doReturn(-1L).when(mf).createJob(anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyString(), anyObject());
+
+        Web.initFramework(mf);
     }
 
     @Test
     public void TestCreateJob() throws Exception {
+        InitWorkingFramework(false);
         JSONObject request = new JSONObject();
         JSONObject response = new JSONObject();
 
@@ -32,50 +50,54 @@ public class WebTest {
         Integer status = Web.createJobResponse(request, response);
 
         assertTrue(status == 200);
-        JobID = response.getInt("job_id");
-        assertTrue(JobID >= 0);
+        Integer JobID = response.getInt("job_id");
+        assertTrue(JobID == 0);
+
+        InitFailedFramework();
+        status = Web.createJobResponse(request, response);
+
+        assertTrue(status == 500);
     }
 
     @Test
-    public void TestUpdateJobStatusPause() throws Exception {
+    public void TestUpdateJobStatus() throws Exception {
+        InitWorkingFramework(false);
         JSONObject request = new JSONObject();
         JSONObject response = new JSONObject();
 
         request.put("status", "pause");
-        Integer status = Web.updateJobStatusResponse(request, response, JobID.toString());
+        Integer status = Web.updateJobStatusResponse(request, response, "0");
 
         assertTrue(status == 200);
-    }
 
-    @Test
-    public void TestUpdateJobStatusResume() throws Exception {
-        JSONObject request = new JSONObject();
-        JSONObject response = new JSONObject();
-
+        request = new JSONObject();
         request.put("status", "resume");
-        Integer status = Web.updateJobStatusResponse(request, response, JobID.toString());
+        status = Web.updateJobStatusResponse(request, response, "0");
 
         assertTrue(status == 200);
-    }
 
-    @Test
-    public void TestUpdateJobStatusStop() throws Exception {
-        JSONObject request = new JSONObject();
-        JSONObject response = new JSONObject();
-
+        request = new JSONObject();
         request.put("status", "stop");
-        Integer status = Web.updateJobStatusResponse(request, response, JobID.toString());
+        status = Web.updateJobStatusResponse(request, response, "0");
 
         assertTrue(status == 200);
+
+        request = new JSONObject();
+        status = Web.updateJobStatusResponse(request, response, "0");
+
+        assertTrue(status == 422);
     }
 
     @Test
     public void TestGetJob() throws Exception {
-        TestCreateJob();
         JSONObject response = new JSONObject();
-        Integer status = Web.getJobResponse(response, JobID.toString());
-        assert(status == 200 || status == 202);
-        Integer resJobID = response.getJSONObject("response").getInt("job_id");
-        assertTrue(resJobID.equals(JobID));
+
+        InitWorkingFramework(false);
+        Integer status = Web.getJobResponse(response, "0");
+        assert(status == 202);
+
+        InitWorkingFramework(true);
+        status = Web.getJobResponse(response, "0");
+        assert(status == 200);
     }
 }
