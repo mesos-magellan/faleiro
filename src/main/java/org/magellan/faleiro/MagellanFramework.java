@@ -19,6 +19,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 import static org.magellan.faleiro.JsonTags.TaskData;
 import static org.magellan.faleiro.JsonTags.VerboseStatus;
@@ -26,6 +27,7 @@ import static org.magellan.faleiro.JsonTags.SimpleStatus;
 
 public class MagellanFramework implements Watcher {
 
+    private static final Logger log = Logger.getLogger(MagellanFramework.class.getName());
 
     class MagellanScheduler implements Scheduler {
 

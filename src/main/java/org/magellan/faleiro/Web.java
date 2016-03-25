@@ -5,8 +5,10 @@ import spark.Request;
 import spark.Response;
 import spark.Spark;
 
-public class Web {
+import java.util.logging.Logger;
 
+public class Web {
+    private static final Logger log = Logger.getLogger(Web.class.getName());
     private static MagellanFramework framework;
 
     public static void main(String[] args) {
@@ -17,7 +19,7 @@ public class Web {
         framework = new MagellanFramework();
         framework.initializeFramework(System.getenv("MASTER_ADDRESS"));
         framework.startFramework();
-        //initWebRoutes();
+        initWebRoutes();
     }
 
     private static void initWebRoutes() {
@@ -38,7 +40,7 @@ public class Web {
      *     job_name : String,
      *     job_time : int,
      *     module_url : String
-     *     job_data : JSONObject
+     *     module_data : JSONObject
      * }
      *
      * // Job successfully created
@@ -86,13 +88,16 @@ public class Web {
         Double jobInitCoolingRate = 0.1;
         Integer taskTime = request.getInt("job_time");
         String moduleUrl = request.getString("module_url");
-        JSONObject jobData = request.isNull("job_data") ? new JSONObject() : request.getJSONObject("job_data");
+        JSONObject jobData = request.optJSONObject("module_data");
+        if(jobData == null) {
+            jobData = new JSONObject();
+        }
 
         Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
                 , taskTime, moduleUrl, jobData);
 
         if(jobId < 0) {
-            response.put("message", "Failed to create job");
+            response.put("message", "Failed to create job internally");
             return 500;
         } else {
             response.put("job_id", jobId);

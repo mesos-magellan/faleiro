@@ -13,12 +13,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 import static org.magellan.faleiro.JsonTags.TaskData;
 import static org.magellan.faleiro.JsonTags.VerboseStatus;
 import static org.magellan.faleiro.JsonTags.SimpleStatus;
 
 public class MagellanJob {
+    private static final Logger log = Logger.getLogger(MagellanJob.class.getName());
 
     // These constants are used to tell the framework how much of each
     // resource each task created by this job needs to execute
@@ -216,7 +218,6 @@ public class MagellanJob {
     private void run() {
 
         while (currentTemp > TEMP_MIN) {
-
             while(currentIteration < jobIterationsPerTemp) {
                 if(state == JobState.STOP) {
                     return;

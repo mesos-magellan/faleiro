@@ -6,9 +6,11 @@ import com.netflix.fenzo.TaskRequest;
 import com.netflix.fenzo.VMTaskFitnessCalculator;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 public class MagellanTaskRequest implements TaskRequest {
 
+    private static final Logger log = Logger.getLogger(MagellanTaskRequest.class.getName());
     private String m_id;
     private String m_name;
     private double m_cpus;
