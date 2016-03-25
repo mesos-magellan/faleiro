@@ -17,8 +17,6 @@ import static org.junit.Assert.*;
 public class MagellanJobTest {
     MagellanJob testBeginning;
 
-    boolean initialized = false;
-
     @org.junit.Before
     public void setUp() throws Exception {
         testBeginning = new MagellanJob(3,                  // Id
@@ -90,6 +88,13 @@ public class MagellanJobTest {
 
         assertEquals(prevFinishedTasks + 1,testBeginning.getNumFinishedTasks());
         assertEquals(prevHistorySize + 1, testBeginning.getEnergyHistory().size());
+
+        try {
+            testBeginning.processIncomingMessages(null);
+            assertTrue(true);
+        }catch (Exception e){
+            assertTrue(false);
+        }
     }
 
     @Test
@@ -145,7 +150,7 @@ public class MagellanJobTest {
             Double p = (Double) simple.get(SimpleStatus.ADDITIONAL_PARAMS);
             assertTrue(false);
         }catch (Exception e){
-
+            assertTrue(true);
         }
 
         assertEquals((MagellanJob.JobState) simple.get(SimpleStatus.CURRENT_STATE), MagellanJob.JobState.INITIALIZED);

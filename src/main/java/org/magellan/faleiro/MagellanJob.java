@@ -147,30 +147,30 @@ public class MagellanJob {
     public MagellanJob(JSONObject j){
 
         //Reload constants
-        TEMP_MIN = j.getDouble("temp_min");
-        NUM_CPU = j.getDouble("num_cpu");
-        NUM_MEM = j.getDouble("num_mem");
-        NUM_NET_MBPS = j.getDouble("num_net_mbps");
-        NUM_DISK = j.getDouble("num_disk");
-        NUM_PORTS = j.getInt("num_ports");
-        NUM_SIMULTANEOUS_TASKS = j.getInt("num_simultaneous_tasks");
+        TEMP_MIN = j.getDouble(VerboseStatus.TEMP_MIN);
+        NUM_CPU = j.getDouble(VerboseStatus.NUM_CPU);
+        NUM_MEM = j.getDouble(VerboseStatus.NUM_MEM);
+        NUM_NET_MBPS = j.getDouble(VerboseStatus.NUM_NET_MBPS);
+        NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
+        NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
+        NUM_SIMULTANEOUS_TASKS = j.getInt(VerboseStatus.NUM_SIMULTANEOUS_TASKS);
+        currentIteration = j.getDouble(VerboseStatus.CURRENT_ITERATION);
 
-        currentIteration = j.getDouble("current_iteration");
-        jobID = j.getInt("job_id");
-        jobName = j.getString("job_name");
-        jobStartingTemp = j.getDouble("job_starting_temp");
-        jobCoolingRate = j.getDouble("job_cooling_rate");
-        jobIterationsPerTemp = j.getInt("job_count");
-        jobTaskTime = j.getInt("task_seconds");
-        jobTaskName = j.getString("task_name");
-        jobCurrentBestSolution = j.getString("best_location");
-        jobBestEnergy = j.getDouble("best_energy");
-        energyHistory = (new Gson()).fromJson(j.getString("energy_history"), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
-        numFinishedTasks = j.getInt("num_finished_tasks");
+        jobID = j.getInt(SimpleStatus.JOB_ID);
+        jobName = j.getString(SimpleStatus.JOB_NAME);
+        jobStartingTemp = j.getDouble(SimpleStatus.JOB_STARTING_TEMP);
+        jobCoolingRate = j.getDouble(SimpleStatus.JOB_COOLING_RATE);
+        jobIterationsPerTemp = j.getInt(SimpleStatus.JOB_COUNT);
+        jobTaskTime = j.getInt(SimpleStatus.TASK_SECONDS);
+        jobTaskName = j.getString(SimpleStatus.TASK_NAME);
+        jobCurrentBestSolution = j.getString(SimpleStatus.BEST_LOCATION);
+        jobBestEnergy = j.getDouble(SimpleStatus.BEST_ENERGY);
+        energyHistory = (new Gson()).fromJson(j.getString(SimpleStatus.ENERGY_HISTORY), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
+        numFinishedTasks = j.getInt(SimpleStatus.NUM_FINISHED_TASKS);
         numTasksSent = numFinishedTasks;
-        numTotalTasks = j.getInt("num_total_tasks");
-        jobAdditionalParam = j.getJSONObject("additional_params");
-        state = (new Gson()).fromJson(j.getString("current_state"), JobState.class);
+        numTotalTasks = j.getInt(SimpleStatus.NUM_TOTAL_TASKS);
+        jobAdditionalParam = j.getJSONObject(SimpleStatus.ADDITIONAL_PARAMS);
+        state = (new Gson()).fromJson(j.getString(SimpleStatus.CURRENT_STATE), JobState.class);
         currentTemp = jobStartingTemp - (numFinishedTasks/jobIterationsPerTemp) * jobCoolingRate;
 
 
@@ -291,6 +291,9 @@ public class MagellanJob {
      * @param data
      */
     public void processIncomingMessages(String data) {
+        if(data == null){
+            return;
+        }
 
         // Retrieve the data sent by the executor
         JSONObject js = new JSONObject(data);
