@@ -40,19 +40,18 @@ public class LeaderElection {
             // Open the replica. Once this operation completes resources can be created and managed.
             atomix.open().join();
 
-            System.out.println("Joined");
-
             // Create a leader election resource.
             DistributedGroup group = atomix.getGroup("election").get();
-            System.out.println("Got group");
 
             // Join the group.
             LocalGroupMember member = group.join().get();
-            System.out.println("Joined local something");
 
+            System.out.println("Registering Callback");
             // Register a callback to be called when the local member is elected the leader.
             group.election().onElection(leader -> {
-                if (leader.equals(member)) {
+                System.out.println("Leader id is " + leader.leader().id());
+                System.out.println("Member id is " + member.id());
+                if (leader.leader().id().equals(member.id())) {
                     synchronized (m_lock) {
                         System.out.println("Elected leader!");
                         isLeader = true;
