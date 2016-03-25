@@ -114,6 +114,7 @@ public class MagellanFramework implements Watcher {
     private final HashMap<String, Long> submittedTaskIdsToJobIds = new HashMap<>();
     private final HashMap<String, String> launchedTasks = new HashMap<>();
     private Watcher zookeeperWatcher = null;
+    private ZookeeperService zk = null;
 
     public MagellanFramework(){
         fenzoScheduler = new TaskScheduler.Builder()
@@ -151,14 +152,18 @@ public class MagellanFramework implements Watcher {
         // happen after this framework is elected as the leader.
 
         // Connect to zookeeper
-        ZooKeeper zk = null;
         try {
             String zAddr = System.getenv("ZK_IP") + ":" + System.getenv("ZK_PORT");
-            zk = new ZooKeeper(zAddr,10000,this);
+            zk = new ZookeeperService(zAddr,this);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        try {
+            Thread.sleep(6000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         LeaderElection leader = new LeaderElection(zk);
         zookeeperWatcher = leader;
         leader.connect();
@@ -204,7 +209,7 @@ public class MagellanFramework implements Watcher {
                     mesosMasterIP,
                     true);
         }
-
+/*
         // Create a datamonitor which will be used to perisist the scheduler's state
         dataMonitor  = new DataMonitor(zk, System.getenv("ZKNODE_PATH") ,null, null, this);
         zookeeperWatcher = dataMonitor;
@@ -219,7 +224,7 @@ public class MagellanFramework implements Watcher {
         }else{
             System.out.println("No past state found");
         }
-
+*/
         mesosDriver.set(mesosSchedulerDriver);
     }
 
