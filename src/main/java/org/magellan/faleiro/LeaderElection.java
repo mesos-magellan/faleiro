@@ -2,10 +2,12 @@ package org.magellan.faleiro;
 
 import org.apache.zookeeper.*;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class LeaderElection  implements Watcher{
     private final String LEADER_ELECTION_ROOT_NODE = "/election";
     private final String CHILD_NODE_PREFIX = "/p_";
+    private static final Logger log = Logger.getLogger(LeaderElection.class.getName());
 
     private Object m_lock = new Object();
     private Boolean m_isLeader = false;

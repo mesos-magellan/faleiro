@@ -8,9 +8,11 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class ZookeeperService {
     private ZooKeeper zooKeeper;
+    private static final Logger log = Logger.getLogger(ZookeeperService.class.getName());
 
     public ZookeeperService(final String url, final Watcher processNodeWatcher) throws IOException {
         try {
