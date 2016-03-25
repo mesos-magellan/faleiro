@@ -147,10 +147,6 @@ public class MagellanFramework implements Watcher {
      * @param mesosMasterIP     - IP Address of the mesos master
      */
     public void initializeFramework(String mesosMasterIP){
-        // First connect to the cluster of frameworks and undergo leader election.
-        // Inititalization of the framework and connecting to the master should only
-        // happen after this framework is elected as the leader.
-
         // Connect to zookeeper
         try {
             String zAddr = System.getenv("ZK_IP") + ":" + System.getenv("ZK_PORT");
@@ -159,14 +155,17 @@ public class MagellanFramework implements Watcher {
             e.printStackTrace();
         }
 
+        // Pause for a short amount of time to let other to let other schedulers start
         try {
-            Thread.sleep(6000);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        // Undergo leader election and block until current scheduler is leader
         LeaderElection leader = new LeaderElection(zk);
         zookeeperWatcher = leader;
-        leader.connect();
+        leader.initialize();
         leader.blockUntilElectedLeader();
 
 
@@ -209,22 +208,22 @@ public class MagellanFramework implements Watcher {
                     mesosMasterIP,
                     true);
         }
-/*
+
         // Create a datamonitor which will be used to perisist the scheduler's state
-        dataMonitor  = new DataMonitor(zk, System.getenv("ZKNODE_PATH") ,null, null, this);
+        dataMonitor  = new DataMonitor(zk, System.getenv("ZKNODE_PATH"), this);
         zookeeperWatcher = dataMonitor;
         dataMonitor.initialize();
 
         //Retrieve previous state of scheduler if it exists and intialize the scheduler
         //with this
         JSONObject pstate = dataMonitor.getInitialState();
-        if(pstate != null){
+        if(pstate != null && pstate.length()>0){
             System.out.println("Restoring previous framework state from Zookeeper");
             restorePreviousState(pstate);
         }else{
             System.out.println("No past state found");
         }
-*/
+
         mesosDriver.set(mesosSchedulerDriver);
     }
 
@@ -244,6 +243,12 @@ public class MagellanFramework implements Watcher {
     }
 
 
+    /**
+     * Callback function for zookeeper events. MagellanFramework itself wont handle the
+     * events so forward the event to the current watcher. Only one watcher can be
+     * active at a time.
+     * @param watchedEvent
+     */
     @Override
     public void process(WatchedEvent watchedEvent) {
         if(zookeeperWatcher!=null) {
