@@ -1,8 +1,12 @@
 package org.magellan.faleiro;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.mesos.Protos;
 import org.json.JSONObject;
 import org.junit.Test;
+
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static org.magellan.faleiro.JsonTags.TaskData;
 import static org.magellan.faleiro.JsonTags.VerboseStatus;
@@ -144,8 +148,27 @@ public class MagellanJobTest {
     @Test
     public void testGetSimpleStatus() throws Exception {
         JSONObject simple = testBeginning.getSimpleStatus();
-        //assertEquals(simple.get(""),3,0);
+        assertEquals((Long)simple.get(SimpleStatus.JOB_ID),3,0);
+        assertEquals((String)simple.get(SimpleStatus.JOB_NAME),"tester");
+        assertEquals((Double) simple.get(SimpleStatus.JOB_COUNT),2.0,0);
+        assertEquals((Double) simple.get(SimpleStatus.TASK_SECONDS),10,0);
+        assertEquals((String)simple.get(SimpleStatus.TASK_NAME),"task_tester");
+        assertEquals((String)simple.get(SimpleStatus.BEST_LOCATION),"");
+
+        ConcurrentLinkedDeque eh = (new Gson()).fromJson(simple.getString(SimpleStatus.ENERGY_HISTORY), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
+        assertTrue(eh.size() == 0);
+        assertEquals((Integer) simple.get(SimpleStatus.NUM_FINISHED_TASKS),0,0);
+
+        try {
+            Double p = (Double) simple.get(SimpleStatus.ADDITIONAL_PARAMS);
+            assertTrue(false);
+        }catch (Exception e){
+        }
+
+        assertEquals((MagellanJob.JobState) simple.get(SimpleStatus.CURRENT_STATE), MagellanJob.JobState.INITIALIZED);
     }
+
+
 
     @Test
     public void testGetState() throws Exception {

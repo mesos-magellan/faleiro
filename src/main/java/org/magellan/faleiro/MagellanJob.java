@@ -333,18 +333,18 @@ public class MagellanJob {
      */
     public JSONObject getStateSnapshot() {
         JSONObject jsonObj = getSimpleStatus();
-        jsonObj.put("current_iteration", currentIteration);
-        jsonObj.put("current_temp", currentTemp);
-        jsonObj.put("num_tasks_sent", getNumTasksSent());
+        jsonObj.put(VerboseStatus.CURRENT_ITERATION, currentIteration);
+        jsonObj.put(VerboseStatus.CURRENT_TEMP, currentTemp);
+        jsonObj.put(VerboseStatus.NUM_TASKS_SENT, getNumTasksSent());
 
         // Store constants
-        jsonObj.put("temp_min", TEMP_MIN);
-        jsonObj.put("num_cpu", NUM_CPU);
-        jsonObj.put("num_mem", NUM_MEM);
-        jsonObj.put("num_net_mbps", NUM_NET_MBPS);
-        jsonObj.put("num_disk", NUM_DISK);
-        jsonObj.put("num_ports", NUM_PORTS);
-        jsonObj.put("num_simultaneous_tasks", NUM_SIMULTANEOUS_TASKS);
+        jsonObj.put(VerboseStatus.TEMP_MIN, TEMP_MIN);
+        jsonObj.put(VerboseStatus.NUM_CPU, NUM_CPU);
+        jsonObj.put(VerboseStatus.NUM_MEM, NUM_MEM);
+        jsonObj.put(VerboseStatus.NUM_NET_MBPS, NUM_NET_MBPS);
+        jsonObj.put(VerboseStatus.NUM_DISK, NUM_DISK);
+        jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
+        jsonObj.put(VerboseStatus.NUM_SIMULTANEOUS_TASKS, NUM_SIMULTANEOUS_TASKS);
 
         return  jsonObj;
     }
@@ -355,21 +355,21 @@ public class MagellanJob {
      */
     public JSONObject getSimpleStatus() {
         JSONObject jsonObj = new JSONObject();
-        jsonObj.put("job_id", getJobID());
-        jsonObj.put("job_name", getJobName());
-        jsonObj.put("job_starting_temp", getJobStartingTemp());
-        jsonObj.put("job_cooling_rate", getJobCoolingRate());
-        jsonObj.put("job_count", getJobIterations());
-        jsonObj.put("task_seconds", getTaskTime());
-        jsonObj.put("task_name", getJobTaskName());
-        jsonObj.put("best_location", getBestLocation());
-        jsonObj.put("best_energy", getBestEnergy());
-        jsonObj.put("energy_history", new Gson().toJson(getEnergyHistory()));
-        jsonObj.put("num_running_tasks", getNumTasksSent() - getNumFinishedTasks());
-        jsonObj.put("num_finished_tasks", getNumFinishedTasks());
-        jsonObj.put("num_total_tasks", getNumTotalTasks());
-        jsonObj.put("additional_params", getJobAdditionalParam());
-        jsonObj.put("current_state", getState());
+        jsonObj.put(SimpleStatus.JOB_ID, getJobID());
+        jsonObj.put(SimpleStatus.JOB_NAME, getJobName());
+        jsonObj.put(SimpleStatus.JOB_STARTING_TEMP, getJobStartingTemp());
+        jsonObj.put(SimpleStatus.JOB_COOLING_RATE, getJobCoolingRate());
+        jsonObj.put(SimpleStatus.JOB_COUNT, getJobIterations());
+        jsonObj.put(SimpleStatus.TASK_SECONDS, getTaskTime());
+        jsonObj.put(SimpleStatus.TASK_NAME, getJobTaskName());
+        jsonObj.put(SimpleStatus.BEST_LOCATION, getBestLocation());
+        jsonObj.put(SimpleStatus.BEST_ENERGY, getBestEnergy());
+        jsonObj.put(SimpleStatus.ENERGY_HISTORY, new Gson().toJson(getEnergyHistory()));
+        jsonObj.put(SimpleStatus.NUM_RUNNING_TASKS, getNumTasksSent() - getNumFinishedTasks());
+        jsonObj.put(SimpleStatus.NUM_FINISHED_TASKS, getNumFinishedTasks());
+        jsonObj.put(SimpleStatus.NUM_TOTAL_TASKS, getNumTotalTasks());
+        jsonObj.put(SimpleStatus.ADDITIONAL_PARAMS, getJobAdditionalParam());
+        jsonObj.put(SimpleStatus.CURRENT_STATE, getState());
         return jsonObj;
     }
 
