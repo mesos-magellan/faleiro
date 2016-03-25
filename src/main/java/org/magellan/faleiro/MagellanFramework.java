@@ -4,7 +4,6 @@ import com.google.protobuf.ByteString;
 import com.netflix.fenzo.*;
 import com.netflix.fenzo.functions.Action1;
 import com.netflix.fenzo.plugins.VMLeaseObject;
-import io.atomix.catalyst.transport.Address;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
@@ -107,15 +106,15 @@ public class MagellanFramework implements Watcher {
     private TaskScheduler fenzoScheduler;
     private MesosSchedulerDriver mesosSchedulerDriver;
     private DataMonitor dataMonitor = null;
-    //private boolean initialized = false;
     private  long numCreatedJobs = 0;
-    //private final AtomicBoolean frameworkHasShutdown = new AtomicBoolean(true);
     private final AtomicReference<MesosSchedulerDriver> mesosDriver = new AtomicReference<>();
     private final ConcurrentHashMap<Long, MagellanJob> jobsList = new ConcurrentHashMap<>();
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
     private final Map<String, MagellanTaskRequest> pendingTasksMap = new HashMap<>();
     private final HashMap<String, Long> submittedTaskIdsToJobIds = new HashMap<>();
     private final HashMap<String, String> launchedTasks = new HashMap<>();
+    private Watcher zookeeperWatcher = null;
+    private ZookeeperService zk = null;
 
     public MagellanFramework(){
         fenzoScheduler = new TaskScheduler.Builder()
@@ -137,8 +136,6 @@ public class MagellanFramework implements Watcher {
     public Protos.Status shutdownFramework() {
         System.out.println("Shutting down mesos driver");
         Protos.Status status = mesosSchedulerDriver.stop();
-        //frameworkHasShutdown.set(true);
-        //initialized = false;
         return status;
     }
 
@@ -150,25 +147,27 @@ public class MagellanFramework implements Watcher {
      * @param mesosMasterIP     - IP Address of the mesos master
      */
     public void initializeFramework(String mesosMasterIP){
-        // First connect to the cluster of frameworks and undergo leader election.
-        // Inititalization of the framework and connecting to the master should only
-        // happen after this framework is elected as the leader.
+        // Connect to zookeeper
+        try {
+            String zAddr = System.getenv("ZK_IP") + ":" + System.getenv("ZK_PORT");
+            zk = new ZookeeperService(zAddr,this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        List<Address> members = Arrays.asList(
-                new Address("10.144.144.21", 6055),
-                new Address("10.144.144.22", 6055)
+        // Pause for a short amount of time to let other to let other schedulers start
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-                //new Address("10.144.144.23", 6055)
-        );
 
-        Address current = new Address(System.getenv("LIBPROCESS_IP"),6055);
-
-        System.out.println(System.getenv("LIBPROCESS_IP"));
-
-        /*LeaderElection leader = new LeaderElection(current,members);
-        leader.connect();
+        // Undergo leader election and block until current scheduler is leader
+        LeaderElection leader = new LeaderElection(zk);
+        zookeeperWatcher = leader;
+        leader.initialize();
         leader.blockUntilElectedLeader();
-        */
 
         Scheduler mesosScheduler = new MagellanScheduler();
 
@@ -180,8 +179,6 @@ public class MagellanFramework implements Watcher {
 
         if (System.getenv("MESOS_AUTHENTICATE") != null) {
             System.out.println("Enabling authentication for the framework");
-            System.out.println(System.getenv("SECRET"));
-            System.out.println(System.getenv("PRINCIPAL"));
 
             if (System.getenv("PRINCIPAL") == null) {
                 System.err.println("Expecting authentication principal in the environment");
@@ -212,20 +209,15 @@ public class MagellanFramework implements Watcher {
                     true);
         }
 
-
-        // Connect to zookeeper node
-        try {
-            String zAddr = System.getenv("ZK_IP") + ":" + System.getenv("ZK_PORT");
-            ZooKeeper zk = new ZooKeeper(zAddr,10000,this);
-            dataMonitor  = new DataMonitor(zk, System.getenv("ZKNODE_PATH") ,null, null, this);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Create a datamonitor which will be used to perisist the scheduler's state
+        dataMonitor  = new DataMonitor(zk, System.getenv("ZKNODE_PATH"), this);
+        zookeeperWatcher = dataMonitor;
+        dataMonitor.initialize();
 
         //Retrieve previous state of scheduler if it exists and intialize the scheduler
         //with this
         JSONObject pstate = dataMonitor.getInitialState();
-        if(pstate != null){
+        if(pstate != null && pstate.length()>0){
             System.out.println("Restoring previous framework state from Zookeeper");
             restorePreviousState(pstate);
         }else{
@@ -251,10 +243,16 @@ public class MagellanFramework implements Watcher {
     }
 
 
+    /**
+     * Callback function for zookeeper events. MagellanFramework itself wont handle the
+     * events so forward the event to the current watcher. Only one watcher can be
+     * active at a time.
+     * @param watchedEvent
+     */
     @Override
     public void process(WatchedEvent watchedEvent) {
-        if(dataMonitor!=null) {
-            dataMonitor.process(watchedEvent);
+        if(zookeeperWatcher!=null) {
+            zookeeperWatcher.process(watchedEvent);
         }
     }
 

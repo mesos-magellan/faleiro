@@ -1,82 +1,68 @@
 package org.magellan.faleiro;
 
-import io.atomix.Atomix;
-import io.atomix.AtomixReplica;
-import io.atomix.catalyst.transport.Address;
-import io.atomix.catalyst.transport.NettyTransport;
-import io.atomix.copycat.server.storage.Storage;
-import io.atomix.copycat.server.storage.StorageLevel;
-import io.atomix.group.DistributedGroup;
-import io.atomix.group.LocalGroupMember;
+import org.apache.zookeeper.*;
+import java.util.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
+public class LeaderElection  implements Watcher{
+    private final String LEADER_ELECTION_ROOT_NODE = "/election";
+    private final String CHILD_NODE_PREFIX = "/p_";
 
-public class LeaderElection {
-    Object m_lock = new Object();
-    Boolean isLeader = false;
-    Address localAddr;
-    List<Address> members;
+    private Object m_lock = new Object();
+    private Boolean m_isLeader = false;
+    private ZookeeperService m_zK;
+    private String m_childNodePath;
+    private String m_watchedNodePath;
 
-    public LeaderElection(Address localAddr, List<Address> groupMembers){
-        this.localAddr = localAddr;
-        this.members = groupMembers;
+    public LeaderElection(ZookeeperService zk){
+        m_zK = zk;
     }
 
-    public void connect(){
-        try {
+    /**
+     * Creates the root node for leader election if it doesn't exist
+     */
+    public void initialize(){
+        final String rootNodePath = m_zK.createNode(LEADER_ELECTION_ROOT_NODE, false, false);
+        m_childNodePath = m_zK.createNode(rootNodePath + CHILD_NODE_PREFIX, false, true);
+        attemptForLeaderPosition();
+    }
 
-            // Create a stateful Atomix replica. The replica communicates with other replicas in the cluster
-            // to replicate state changes.
-            Atomix atomix = AtomixReplica.builder(localAddr, members)
-                    .withTransport(new NettyTransport())
-                    .withStorage(new Storage(StorageLevel.MEMORY))
-                    .build();
+    /**
+     * This method is triggered either when the immediate predecessor of this node goes
+     * down. WHen this happens, we need to check if the node that went down is the leader.
+     * If it is, we become the new leader. If not, then we set another watcher for our next
+     * predecessor
+     */
+    private void attemptForLeaderPosition() {
 
-            // Open the replica. Once this operation completes resources can be created and managed.
-            atomix.open().join();
+        final List<String> childNodePaths = m_zK.getChildren(LEADER_ELECTION_ROOT_NODE, false);
 
-            System.out.println("Joined");
+        Collections.sort(childNodePaths);
 
-            // Create a leader election resource.
-            DistributedGroup group = atomix.getGroup("election").get();
-            System.out.println("Got group");
-
-            // Join the group.
-            LocalGroupMember member = group.join().get();
-            System.out.println("Joined local something");
-
-            // Register a callback to be called when the local member is elected the leader.
-            group.election().onElection(leader -> {
-                if (leader.equals(member)) {
-                    synchronized (m_lock) {
-                        System.out.println("Elected leader!");
-                        isLeader = true;
-                        m_lock.notify();
-                    }
-                }
-            });
-
-            // Block while the replica is open.
-            /*while (atomix.isOpen()) {
-                Thread.sleep(1000);
-            }*/
-        }catch (InterruptedException e){
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
+        int index = childNodePaths.indexOf(m_childNodePath.substring(m_childNodePath.lastIndexOf('/') + 1));
+        if(index == 0) {
+            System.out.println("[LEADER ELECTION] - THIS SCHEDULER HAS JUST BEEN ELECTED LEADER!");
+            synchronized (m_lock) {
+                m_isLeader = true;
+                m_lock.notify();
+            }
+        } else {
+            // Someone else is elected leader so set a watcher on the node before you to get notified when it dies
+            final String watchedNodeShortPath = childNodePaths.get(index - 1);
+            m_watchedNodePath = LEADER_ELECTION_ROOT_NODE + "/" + watchedNodeShortPath;
+            System.out.println("[LEADER ELECTION] - SETTING WATCH ON NODE WITH PATH: " + m_watchedNodePath);
+            m_zK.watchNode(m_watchedNodePath, true);
         }
     }
 
 
+    /**
+     * This method blocks until the current scheduler becomes the leader
+     */
     public void blockUntilElectedLeader(){
-        System.out.println("Waiting until elected leader");
         synchronized (m_lock){
             try {
-                while(!isLeader) {
+                while(!m_isLeader) {
+                    System.out.println("[LEADER ELECTION] - WAITING UNTIL ELECTED LEADER");
                     m_lock.wait();
                 }
             } catch (InterruptedException e) {
@@ -85,4 +71,23 @@ public class LeaderElection {
         }
     }
 
+    /**
+     * This callback function is called whenever a watched event is triggered
+     * in zookeeper. In this case, a watched event is triggered when
+     * the current nodes immediate successor dies. This node can either be
+     * the Leader or another scheduler.When this callback is called, we attempt
+     * to become the leader
+     * @param event
+     */
+    @Override
+    public void process(WatchedEvent event) {
+        System.out.println("[LEADER ELECTION] - EVENT RECEIVED: " + event);
+        final Event.EventType eventType = event.getType();
+        if(Event.EventType.NodeDeleted.equals(eventType)) {
+            if(event.getPath().equalsIgnoreCase(m_watchedNodePath)) {
+                attemptForLeaderPosition();
+            }
+        }
+
+    }
 }

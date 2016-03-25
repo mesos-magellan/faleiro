@@ -58,29 +58,6 @@
     <orderEntry type="library" name="Maven: org.json:json:20151123" level="project" />
     <orderEntry type="library" name="Maven: junit:junit:4.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.mockito:mockito-all:1.10.19" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-all:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-resource-manager:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-resource:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.copycat:copycat-client:1.0.0-rc4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.copycat:copycat-protocol:1.0.0-rc4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.copycat:copycat-server:1.0.0-rc4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-local:1.0.4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-group:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-variables:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-collections:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-messaging:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix:atomix-concurrent:1.0.0-rc3" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-netty:1.0.4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-transport:1.0.4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-common:1.0.4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-serializer:1.0.4" level="project" />
-    <orderEntry type="library" name="Maven: io.atomix.catalyst:catalyst-buffer:1.0.4" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-transport:4.0.33.Final" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-buffer:4.0.33.Final" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-common:4.0.33.Final" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-handler:4.0.33.Final" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-codec:4.0.33.Final" level="project" />
     <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.2.2" level="project" />
   </component>
 </module>
