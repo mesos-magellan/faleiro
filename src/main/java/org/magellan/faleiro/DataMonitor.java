@@ -15,24 +15,24 @@ import java.util.List;
 
 public class DataMonitor implements Watcher, AsyncCallback.StatCallback {
 
-    ZooKeeper zk;
+    private ZooKeeper zk;
 
     final public int WRITE_DELAY = 5000;
 
     // Absolute path to znode on Zookeeper service
-    String znode;
+    private String znode;
 
-    Watcher chainedWatcher;
+    private Watcher chainedWatcher;
 
-    boolean dead;
+    private boolean dead;
 
-    DataMonitorListener listener;
+    private DataMonitorListener listener;
 
-    byte prevData[];
+    private byte prevData[];
 
-    JSONObject initialState;
+    private JSONObject initialState;
 
-    MagellanFramework mframework;
+    private MagellanFramework mframework;
 
     public DataMonitor(ZooKeeper zk, String znode, Watcher chainedWatcher,
                        DataMonitorListener listener, MagellanFramework framework) {
@@ -41,7 +41,9 @@ public class DataMonitor implements Watcher, AsyncCallback.StatCallback {
         this.chainedWatcher = this;
         this.listener = listener;
         this.mframework = framework;
+    }
 
+    public void initialize(){
         try {
             // Perform a synchronous call to the Zookeeper service to check if
             // the znode exists
@@ -62,7 +64,7 @@ public class DataMonitor implements Watcher, AsyncCallback.StatCallback {
                         System.out.println("Discovered state");
                     }catch (JSONException e){
                         System.out.println("Exception thrown");
-                         initialState = null;
+                        initialState = null;
                         prevData = null;
                     }
                 }
@@ -210,7 +212,6 @@ public class DataMonitor implements Watcher, AsyncCallback.StatCallback {
      * Callback function called by AsyncCallback.
      */
     public void processResult(int rc, String path, Object ctx, Stat stat) {
-        System.out.println("RC is " +rc + ". Path is " + path);
         boolean exists;
         switch (Code.get(rc)) {
             case OK:
