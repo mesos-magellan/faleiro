@@ -136,6 +136,7 @@ public class MagellanJobTest {
     @Test
     public void testGetSimpleStatus() throws Exception {
         JSONObject simple = testBeginning.getSimpleStatus();
+        assertEquals((Long)simple.get(SimpleStatus.JOB_STARTING_TIME),System.currentTimeMillis() / 1000L,1);
         assertEquals((Long)simple.get(SimpleStatus.JOB_ID),3,0);
         assertEquals((String)simple.get(SimpleStatus.JOB_NAME),"tester");
         assertEquals((Double) simple.get(SimpleStatus.JOB_COUNT),2.0,0);

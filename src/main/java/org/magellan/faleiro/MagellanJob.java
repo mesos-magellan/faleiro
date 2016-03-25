@@ -35,6 +35,8 @@ public class MagellanJob {
 
     private final String jobName;
 
+    private final long jobStartingTime;
+
     // Current temperature of the job. The temperature is used to choose the starting locations for tasks
     // created by this job. If the temperature is still high, then the job has a greater chance of choosing
     // a worse starting position rather than the current best solution. If the temperature is low, then the
@@ -125,6 +127,7 @@ public class MagellanJob {
         jobAdditionalParam = jso;
         taskExecutor = registerExecutor(System.getenv("EXECUTOR_PATH"));
         numTotalTasks = (int)(jStartingTemp/jCoolingRate)*jCount + ((jStartingTemp%jCoolingRate!=0)?1:0);
+        jobStartingTime = System.currentTimeMillis() / 1000L;
 
         TEMP_MIN = 0;
         NUM_CPU = 1;
@@ -157,6 +160,7 @@ public class MagellanJob {
         currentIteration = j.getDouble(VerboseStatus.CURRENT_ITERATION);
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
+        jobStartingTime = j.getLong(SimpleStatus.JOB_STARTING_TIME);
         jobName = j.getString(SimpleStatus.JOB_NAME);
         jobStartingTemp = j.getDouble(SimpleStatus.JOB_STARTING_TEMP);
         jobCoolingRate = j.getDouble(SimpleStatus.JOB_COOLING_RATE);
@@ -362,6 +366,7 @@ public class MagellanJob {
         jsonObj.put(SimpleStatus.JOB_STARTING_TEMP, getJobStartingTemp());
         jsonObj.put(SimpleStatus.JOB_COOLING_RATE, getJobCoolingRate());
         jsonObj.put(SimpleStatus.JOB_COUNT, getJobIterations());
+        jsonObj.put(SimpleStatus.JOB_STARTING_TIME, getStartingTime());
         jsonObj.put(SimpleStatus.TASK_SECONDS, getTaskTime());
         jsonObj.put(SimpleStatus.TASK_NAME, getJobTaskName());
         jsonObj.put(SimpleStatus.BEST_LOCATION, getBestLocation());
@@ -481,6 +486,8 @@ public class MagellanJob {
     public String getBestLocation() { return jobCurrentBestSolution; }
 
     public double getBestEnergy() { return jobBestEnergy; }
+
+    public Long getStartingTime() { return jobStartingTime; }
 
     public Queue<Double> getEnergyHistory() { return energyHistory; }
 
