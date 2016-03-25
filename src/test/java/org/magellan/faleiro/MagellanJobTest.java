@@ -142,6 +142,7 @@ public class MagellanJobTest {
         assertEquals((Double) simple.get(SimpleStatus.TASK_SECONDS),10,0);
         assertEquals((String)simple.get(SimpleStatus.TASK_NAME),"task_tester");
         assertEquals((String)simple.get(SimpleStatus.BEST_LOCATION),"");
+
         ConcurrentLinkedDeque eh = (new Gson()).fromJson(simple.getString(SimpleStatus.ENERGY_HISTORY), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
         assertTrue(eh.size() == 0);
         assertEquals((Integer) simple.get(SimpleStatus.NUM_FINISHED_TASKS),0,0);
