@@ -25,6 +25,7 @@ public class LeaderElectionTest {
     private String leaderId = "001";
     private String follower1Id = "002";
     private String follower2Id = "003";
+    private static boolean passed = false;
 
     ZookeeperService mockzk_leader = null;
     ZookeeperService mockzk_follower1 = null;
@@ -65,6 +66,10 @@ public class LeaderElectionTest {
         doReturn(elecRoot+childPrefix+follower2Id).when(mockzk_follower2).createNode(eq(elecRoot + childPrefix),anyBoolean(),anyBoolean());
         doReturn(children).when(mockzk_follower2).getChildren(eq(elecRoot),anyBoolean());
         doReturn(true).doThrow(new IllegalStateException()).when(mockzk_follower2).watchNode(anyString(),anyBoolean());
+
+        leader.initialize();
+        follower1.initialize();
+        follower2.initialize();
     }
 
     @After
@@ -74,9 +79,6 @@ public class LeaderElectionTest {
 
     @Test
     public void testInitialize() throws Exception {
-        leader.initialize();
-        follower1.initialize();
-        follower2.initialize();
         assertTrue(leader.isLeader());
         assertFalse(follower1.isLeader());
         assertFalse(follower2.isLeader());
@@ -84,14 +86,21 @@ public class LeaderElectionTest {
 
     @Test
     public void testBlockUntilElectedLeader() throws Exception {
+        new Thread(){
+            public void run(){
+                follower1.blockUntilElectedLeader();
+                // Should not execute as previous call should block since
+                // follower1 blocks
+                passed = true;
+            }
+        }.start();
 
+        Thread.sleep(1000);
+        assertFalse(passed);
     }
 
     @Test
     public void testNewLeader() throws Exception {
-        leader.initialize();
-        follower1.initialize();
-        follower2.initialize();
         String leaderPath = leader.getElectionRoot() + leader.getChildNodePrefix() + leaderId;
         String childPrefix = leader.getChildNodePrefix();
 
@@ -111,9 +120,9 @@ public class LeaderElectionTest {
 
     @Test
     public void testGetWatchedNodePath() throws Exception {
-        follower1.initialize();
-        follower2.initialize();
         assertEquals(follower1.getWatchedNodePath(), follower1.getElectionRoot() + follower1.getChildNodePrefix() + leaderId);
         assertEquals(follower2.getWatchedNodePath(), follower1.getElectionRoot() + follower2.getChildNodePrefix() + follower1Id);
     }
+
+
 }
