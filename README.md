@@ -2,6 +2,7 @@
 Scheduler
 
 [![Build Status](https://travis-ci.org/mesos-magellan/faleiro.svg?branch=master)](https://travis-ci.org/mesos-magellan/faleiro)
+[![Coverage Status](https://coveralls.io/repos/github/mesos-magellan/faleiro/badge.svg?branch=master)](https://coveralls.io/github/mesos-magellan/faleiro?branch=master)
 
 ## Setup
 
