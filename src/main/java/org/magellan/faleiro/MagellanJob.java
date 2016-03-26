@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.ByteString;
 import org.apache.mesos.Protos;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -128,7 +129,7 @@ public class MagellanJob {
         jobAdditionalParam = jso;
         taskExecutor = registerExecutor(System.getenv("EXECUTOR_PATH"));
         numTotalTasks = (int)(jStartingTemp/jCoolingRate)*jCount + ((jStartingTemp%jCoolingRate!=0)?1:0);
-        jobStartingTime = System.currentTimeMillis() / 1000L;
+        jobStartingTime = System.currentTimeMillis();
 
         TEMP_MIN = 0;
         NUM_CPU = 1;
@@ -378,7 +379,7 @@ public class MagellanJob {
         jsonObj.put(SimpleStatus.TASK_NAME, getJobTaskName());
         jsonObj.put(SimpleStatus.BEST_LOCATION, getBestLocation());
         jsonObj.put(SimpleStatus.BEST_ENERGY, getBestEnergy());
-        jsonObj.put(SimpleStatus.ENERGY_HISTORY, new Gson().toJson(getEnergyHistory()));
+        jsonObj.put(SimpleStatus.ENERGY_HISTORY, new JSONArray(getEnergyHistory()));
         jsonObj.put(SimpleStatus.NUM_RUNNING_TASKS, getNumTasksSent() - getNumFinishedTasks());
         jsonObj.put(SimpleStatus.NUM_FINISHED_TASKS, getNumFinishedTasks());
         jsonObj.put(SimpleStatus.NUM_TOTAL_TASKS, getNumTotalTasks());
