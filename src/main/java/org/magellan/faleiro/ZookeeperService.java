@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ZookeeperService {
@@ -18,7 +19,7 @@ public class ZookeeperService {
         try {
             zooKeeper = new ZooKeeper(url, 10000, processNodeWatcher);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
     }
 
@@ -47,9 +48,10 @@ public class ZookeeperService {
             }
 
         } catch (KeeperException | InterruptedException e) {
+            log.log(Level.SEVERE, e.getMessage());
             throw new IllegalStateException(e);
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
 
         return createdNodePath;
@@ -73,6 +75,7 @@ public class ZookeeperService {
             }
 
         } catch (KeeperException | InterruptedException e) {
+            log.log(Level.SEVERE, e.getMessage());
             throw new IllegalStateException(e);
         }
 
@@ -90,6 +93,7 @@ public class ZookeeperService {
         try {
             childNodes = zooKeeper.getChildren(node, watch);
         } catch (KeeperException | InterruptedException e) {
+            log.log(Level.SEVERE, e.getMessage());
             throw new IllegalStateException(e);
         }
 
@@ -110,9 +114,9 @@ public class ZookeeperService {
                 return zooKeeper.getData(node, false, null);
             }
         }catch (InterruptedException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         } catch (KeeperException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
         return null;
     }

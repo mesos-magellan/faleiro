@@ -12,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.magellan.faleiro.JsonTags.TaskData;
@@ -140,6 +141,7 @@ public class MagellanJob {
         currentIteration = 0;
 
         numFreeTaskSlotsLeft = new AtomicInteger(NUM_SIMULTANEOUS_TASKS);
+        log.log(Level.CONFIG, "New Job created. ID is " + jobID);
     }
 
     /**
@@ -180,8 +182,8 @@ public class MagellanJob {
 
         numFreeTaskSlotsLeft = new AtomicInteger(NUM_SIMULTANEOUS_TASKS);
         taskExecutor = registerExecutor("/usr/local/bin/enrique");
-        System.out.println("Created new job from zookeeper. State is " + state);
 
+        log.log(Level.CONFIG, "Reviving job from zookeeper. State is " + state + " . Id is " + jobID);
     }
 
     /**
@@ -260,15 +262,15 @@ public class MagellanJob {
             // Depreciate the temperature
             currentTemp = currentTemp - jobCoolingRate;
         }
-        System.out.println("Finished sending tasks. Waiting now. [Tasks sent, Tasks Finished] = [" + numTasksSent + ","+numFinishedTasks+"]");
+        log.log(Level.INFO, "Finished sending tasks. Waiting now. [Tasks sent, Tasks Finished] = [" + numTasksSent + ","+numFinishedTasks+"]");
 
         while(state != JobState.STOP && (numTasksSent != numFinishedTasks)) {
             // Waste time while we wait for all tasks to finish
             try{Thread.sleep(100);}catch(InterruptedException ie){}
         }
 
-        System.out.println("[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
-        state=JobState.DONE;
+        state = JobState.DONE;
+        log.log(Level.INFO, "[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
     }
 
     /**
@@ -312,20 +314,25 @@ public class MagellanJob {
             jobCurrentBestSolution = best_location;
             jobBestEnergy = fitness_score;
         }
+        log.log(Level.FINE, "Job: " + getJobID() + " processed finished task");
+
     }
 
     public void stop() {
+        log.log(Level.INFO, "Job: " + getJobID() + " asked to stop");
         state = JobState.STOP;
     }
 
     public void pause() {
         if(!isDone()) {
+            log.log(Level.INFO, "Job: " + getJobID() + " asked to pause");
             state = JobState.PAUSED;
         }
     }
 
     public void resume(){
         if(!isDone()) {
+            log.log(Level.INFO, "Job: " + getJobID() + " asked to resume");
             state = JobState.RUNNING;
         }
     }

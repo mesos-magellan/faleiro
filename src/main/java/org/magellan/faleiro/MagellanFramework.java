@@ -19,6 +19,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.magellan.faleiro.JsonTags.TaskData;
@@ -32,18 +33,18 @@ public class MagellanFramework implements Watcher {
     class MagellanScheduler implements Scheduler {
 
         public void registered(SchedulerDriver schedulerDriver, Protos.FrameworkID frameworkID, Protos.MasterInfo masterInfo) {
-            System.out.println("Registered! ID = " + frameworkID.getValue());
+            log.log(Level.FINE, "Registered! ID = " + frameworkID.getValue());
             fenzoScheduler.expireAllLeases();
         }
 
         public void reregistered(SchedulerDriver schedulerDriver, Protos.MasterInfo masterInfo) {
-            System.out.println("Re-registered " + masterInfo.getId());
+            log.log(Level.FINE, "Re-registered " + masterInfo.getId());
             fenzoScheduler.expireAllLeases();
         }
 
         public void resourceOffers(SchedulerDriver schedulerDriver, List<Protos.Offer> offers) {
             for(Protos.Offer offer: offers) {
-                System.out.println("Adding offer " + offer.getId() + " from host " + offer.getHostname());
+                log.log(Level.FINE, "Adding offer " + offer.getId() + " from host " + offer.getHostname());
                 leasesQueue.offer(new VMLeaseObject(offer));
             }
         }
@@ -53,19 +54,16 @@ public class MagellanFramework implements Watcher {
         }
 
         public void statusUpdate(SchedulerDriver schedulerDriver, Protos.TaskStatus taskStatus) {
-            //System.out.println("Task Update: " + taskStatus.getTaskId().getValue() + " in state " + taskStatus.getState());
             switch (taskStatus.getState()) {
                 case TASK_ERROR:
                 case TASK_FAILED:
                 case TASK_LOST:
-                    System.out.println("Task Failure. Reason: " + taskStatus.getMessage());
+                    log.log(Level.WARNING, "Task Failure. Reason: " + taskStatus.getMessage());
                     break;
                 case TASK_FINISHED:
                     // Find which job this task is associated with at forward the message to it
                     try {
                         String data = new String(taskStatus.getData().toByteArray(), "UTF-8");
-                        System.out.println("data " + data);
-                        System.out.flush();
                         String taskID = recoverTaskId(data);
 
                         // Process the result of the task by forwarding the data to the job
@@ -78,7 +76,7 @@ public class MagellanFramework implements Watcher {
                         //Notify Fenzo that the task has completed and is no longer assigned
                         fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
                     } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
+                        log.log(Level.SEVERE, e.getMessage());
                     }
                     break;
             }
@@ -123,7 +121,7 @@ public class MagellanFramework implements Watcher {
                 .withLeaseOfferExpirySecs(1000000000)
                 .withLeaseRejectAction(new Action1<VirtualMachineLease>() {
                     public void call(VirtualMachineLease lease) {
-                        System.out.println("Declining offer on " + lease.hostname());
+                        log.log(Level.INFO, "Declining offer on " + lease.hostname());
                         mesosDriver.get().declineOffer(lease.getOffer().getId());
                     }
                 })
@@ -136,7 +134,7 @@ public class MagellanFramework implements Watcher {
      * @return status of shutdown
      */
     public Protos.Status shutdownFramework() {
-        System.out.println("Shutting down mesos driver");
+        log.log(Level.INFO, "Shutting down mesos driver");
         Protos.Status status = mesosSchedulerDriver.stop();
         return status;
     }
@@ -154,14 +152,14 @@ public class MagellanFramework implements Watcher {
             String zAddr = System.getenv("ZK_IP") + ":" + System.getenv("ZK_PORT");
             zk = new ZookeeperService(zAddr,this);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
 
         // Pause for a short amount of time to let other to let other schedulers start
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
 
 
@@ -180,10 +178,10 @@ public class MagellanFramework implements Watcher {
 
 
         if (System.getenv("MESOS_AUTHENTICATE") != null) {
-            System.out.println("Enabling authentication for the framework");
+            log.log(Level.CONFIG, "Enabling authentication for the framework");
 
             if (System.getenv("PRINCIPAL") == null) {
-                System.err.println("Expecting authentication principal in the environment");
+                log.log(Level.SEVERE, "Expecting authentication principal in the environment");
                 System.exit(1);
             }
 
@@ -220,10 +218,10 @@ public class MagellanFramework implements Watcher {
         //with this
         JSONObject pstate = dataMonitor.getInitialState();
         if(pstate != null && pstate.length()>0){
-            System.out.println("Restoring previous framework state from Zookeeper");
+            log.log(Level.INFO, "Restoring previous framework state from Zookeeper");
             restorePreviousState(pstate);
         }else{
-            System.out.println("No past state found");
+            log.log(Level.INFO, "No past state found on Zookeeper. Starting new framework");
         }
 
         mesosDriver.set(mesosSchedulerDriver);
@@ -293,7 +291,7 @@ public class MagellanFramework implements Watcher {
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
 
         // Start any jobs that we restored from Zookeeper
@@ -369,7 +367,7 @@ public class MagellanFramework implements Watcher {
      *  to the Mesos Driver for execution.
      */
     private void runFramework(){
-        System.out.println("Running Framework");
+        log.log(Level.INFO, "Running Framework");
         List<VirtualMachineLease> newLeases = new ArrayList<>();
         List<TaskRequest> newTaskRequests = new ArrayList<>();
 
@@ -400,7 +398,6 @@ public class MagellanFramework implements Watcher {
 
             // Pass our list of pending tasks as well as current resource offers to Fenzo and receive a mapping between the two
             SchedulingResult schedulingResult = fenzoScheduler.scheduleOnce(new ArrayList<>(pendingTasksMap.values()), newLeases);
-            //System.out.println("result=" + schedulingResult);
 
             // Now use the mesos driver to schedule the tasks
             Map<String,VMAssignmentResult> resultMap = schedulingResult.getResultMap();
@@ -431,7 +428,7 @@ public class MagellanFramework implements Watcher {
                     for(VirtualMachineLease l: leasesUsed)
                         offerIDs.add(l.getOffer().getId());
 
-                    System.out.println(stringBuilder.toString());
+                    log.log(Level.INFO, stringBuilder.toString());
                     // Finally get the mesos driver to launch the tasks on this host
                     mesosSchedulerDriver.launchTasks(offerIDs, taskInfos);
                 }

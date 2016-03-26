@@ -2,6 +2,7 @@ package org.magellan.faleiro;
 
 import org.apache.zookeeper.*;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LeaderElection  implements Watcher{
@@ -42,7 +43,7 @@ public class LeaderElection  implements Watcher{
 
         int index = childNodePaths.indexOf(m_childNodePath.substring(m_childNodePath.lastIndexOf('/') + 1));
         if(index == 0) {
-            System.out.println("[LEADER ELECTION] - THIS SCHEDULER HAS JUST BEEN ELECTED LEADER!");
+            log.log(Level.INFO, "This scheduler has just been elected leader!");
             synchronized (m_lock) {
                 m_isLeader = true;
                 m_lock.notify();
@@ -51,7 +52,7 @@ public class LeaderElection  implements Watcher{
             // Someone else is elected leader so set a watcher on the node before you to get notified when it dies
             final String watchedNodeShortPath = childNodePaths.get(index - 1);
             m_watchedNodePath = LEADER_ELECTION_ROOT_NODE + "/" + watchedNodeShortPath;
-            System.out.println("[LEADER ELECTION] - SETTING WATCH ON NODE WITH PATH: " + m_watchedNodePath);
+            log.log(Level.INFO, "Setting watch on node with path: " + m_watchedNodePath);
             m_zK.watchNode(m_watchedNodePath, true);
         }
     }
@@ -64,11 +65,11 @@ public class LeaderElection  implements Watcher{
         synchronized (m_lock){
             try {
                 while(!m_isLeader) {
-                    System.out.println("[LEADER ELECTION] - WAITING UNTIL ELECTED LEADER");
+                    log.log(Level.INFO, "Waiting until leader elected");
                     m_lock.wait();
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.log(Level.SEVERE, e.getMessage());
             }
         }
     }
@@ -83,7 +84,7 @@ public class LeaderElection  implements Watcher{
      */
     @Override
     public void process(WatchedEvent event) {
-        System.out.println("[LEADER ELECTION] - EVENT RECEIVED: " + event);
+        log.log(Level.INFO, "Event Received: " + event);
         final Event.EventType eventType = event.getType();
         if(Event.EventType.NodeDeleted.equals(eventType)) {
             if(event.getPath().equalsIgnoreCase(m_watchedNodePath)) {
