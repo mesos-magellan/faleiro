@@ -26,32 +26,17 @@ public class MagellanJob {
 
     // These constants are used to tell the framework how much of each
     // resource each task created by this job needs to execute
-    private final double TEMP_MIN;
     private final double NUM_CPU;
     private final double NUM_MEM;
     private final double NUM_NET_MBPS;
     private final double NUM_DISK;
     private final int NUM_PORTS;
-    private final int NUM_SIMULTANEOUS_TASKS; // The maximum number of tasks that this task can create at a time
 
     private final long jobID;
 
     private final String jobName;
 
     private final long jobStartingTime;
-
-    // Current temperature of the job. The temperature is used to choose the starting locations for tasks
-    // created by this job. If the temperature is still high, then the job has a greater chance of choosing
-    // a worse starting position rather than the current best solution. If the temperature is low, then the
-    // job will run tasks closer to the search space where the current best solution was found.
-    //
-    // NOTE: This temperature is different than the temperature used by the executor. The executor has
-    // its own temperature.
-    private double jobStartingTemp;
-
-    // The rate at which the jobTemp variable "cools".
-    // The higher this is, the greater the change that we explore a greater area in our search space
-    private double jobCoolingRate;
 
     // How long each task runs for
     private int jobTaskTime;
@@ -88,9 +73,6 @@ public class MagellanJob {
 
     private Protos.ExecutorInfo taskExecutor;
 
-    private double currentTemp;
-
-    private double currentIteration;
 
     /* lock to wait for division task to complete */
     private Object division_lock = new Object();
@@ -124,15 +106,11 @@ public class MagellanJob {
         taskExecutor = registerExecutor(System.getenv("EXECUTOR_PATH"));
         jobStartingTime = System.currentTimeMillis();
 
-        TEMP_MIN = 0;
         NUM_CPU = 1;
         NUM_MEM = 32;
         NUM_NET_MBPS = 0;
         NUM_DISK = 0;
         NUM_PORTS = 0;
-        NUM_SIMULTANEOUS_TASKS = 10;
-        currentTemp = jobStartingTemp;
-        currentIteration = 0;
 
         log.log(Level.CONFIG, "New Job created. ID is " + jobID);
     }
@@ -145,20 +123,15 @@ public class MagellanJob {
     public MagellanJob(JSONObject j){
 
         //Reload constants
-        TEMP_MIN = j.getDouble(VerboseStatus.TEMP_MIN);
         NUM_CPU = j.getDouble(VerboseStatus.NUM_CPU);
         NUM_MEM = j.getDouble(VerboseStatus.NUM_MEM);
         NUM_NET_MBPS = j.getDouble(VerboseStatus.NUM_NET_MBPS);
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
-        NUM_SIMULTANEOUS_TASKS = j.getInt(VerboseStatus.NUM_SIMULTANEOUS_TASKS);
-        currentIteration = j.getDouble(VerboseStatus.CURRENT_ITERATION);
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
         jobStartingTime = j.getLong(SimpleStatus.JOB_STARTING_TIME);
         jobName = j.getString(SimpleStatus.JOB_NAME);
-        jobStartingTemp = j.getDouble(SimpleStatus.JOB_STARTING_TEMP);
-        jobCoolingRate = j.getDouble(SimpleStatus.JOB_COOLING_RATE);
         jobTaskTime = j.getInt(SimpleStatus.TASK_SECONDS);
         jobTaskName = j.getString(SimpleStatus.TASK_NAME);
         jobCurrentBestSolution = j.getString(SimpleStatus.BEST_LOCATION);
@@ -268,6 +241,14 @@ public class MagellanJob {
 
         /* got result of division task */
         for (int i = 0; i < returnedResult.length(); i++) {
+            if(state == JobState.STOP) {
+                return;
+            }
+
+            while(state==JobState.PAUSED){
+                Thread.yield();
+                // wait while job is paused
+            }
             /* got a list of all the partitions, create a task for each */
             try {
                 String newTaskId = "" + jobID + (numTasksSent+1);
@@ -305,61 +286,6 @@ public class MagellanJob {
         state = JobState.DONE;
         log.log(Level.INFO, "[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
     }
-//
-//        while (currentTemp > TEMP_MIN) {
-//            while(currentIteration < jobIterationsPerTemp) {
-//                if(state == JobState.STOP) {
-//                    return;
-//                }
-//
-//                while(state==JobState.PAUSED || numFreeTaskSlotsLeft.get() == 0 ){
-//                    // Waste cycles while job is paused or if we have reached our cap
-//                    // of available slots for tasks for this job.
-//                }
-//
-//                try {
-//                    // To keep the task ids unique throughout the global job space, use the job ID to
-//                    // ensure uniqueness
-//                    String newTaskId = "" + jobID + (numTasksSent+1);
-//
-//                    // Choose the magellan specific parameters for the new task
-//                    /* TODO: ANTHONY this is where task starting location is done */
-//                    ByteString data = pickNewTaskStartingLocation(jobTaskTime, jobTaskName, newTaskId, jobAdditionalParam);
-//
-//                    /* TODO: ANTHONY this is where you create the task */
-//                    MagellanTaskRequest newTask = new MagellanTaskRequest(
-//                            newTaskId,
-//                            jobName,
-//                            NUM_CPU,
-//                            NUM_MEM,
-//                            NUM_NET_MBPS,
-//                            NUM_DISK,
-//                            NUM_PORTS,
-//                            data);
-//
-//                    // Add the task to the pending queue until the framework requests it
-//                    pendingTasks.put(newTask);/* TODO: ANTHONY this is where you put a task into queue */
-//                    numFreeTaskSlotsLeft.decrementAndGet();
-//                    numTasksSent++;
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//                currentIteration++;
-//            }
-//            currentIteration = 0;
-//            // Depreciate the temperature
-//            currentTemp = currentTemp - jobCoolingRate;
-//        }
-//        log.log(Level.INFO, "Finished sending tasks. Waiting now. [Tasks sent, Tasks Finished] = [" + numTasksSent + ","+numFinishedTasks+"]");
-//
-//        while(state != JobState.STOP && (numTasksSent != numFinishedTasks)) {
-//            // Waste time while we wait for all tasks to finish
-//            try{Thread.sleep(100);}catch(InterruptedException ie){}
-//        }
-//
-//        state = JobState.DONE;
-//        log.log(Level.INFO, "[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
-//    }
 
     /**
      * Called by the magellan framework to get a list of tasks that this job wants scheduled.
@@ -443,18 +369,13 @@ public class MagellanJob {
      */
     public JSONObject getStateSnapshot() {
         JSONObject jsonObj = getSimpleStatus();
-        jsonObj.put(VerboseStatus.CURRENT_ITERATION, currentIteration);
-        jsonObj.put(VerboseStatus.CURRENT_TEMP, currentTemp);
-        jsonObj.put(VerboseStatus.NUM_TASKS_SENT, getNumTasksSent());
 
         // Store constants
-        jsonObj.put(VerboseStatus.TEMP_MIN, TEMP_MIN);
         jsonObj.put(VerboseStatus.NUM_CPU, NUM_CPU);
         jsonObj.put(VerboseStatus.NUM_MEM, NUM_MEM);
         jsonObj.put(VerboseStatus.NUM_NET_MBPS, NUM_NET_MBPS);
         jsonObj.put(VerboseStatus.NUM_DISK, NUM_DISK);
         jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
-        jsonObj.put(VerboseStatus.NUM_SIMULTANEOUS_TASKS, NUM_SIMULTANEOUS_TASKS);
 
         return  jsonObj;
     }
@@ -467,8 +388,6 @@ public class MagellanJob {
         JSONObject jsonObj = new JSONObject();
         jsonObj.put(SimpleStatus.JOB_ID, getJobID());
         jsonObj.put(SimpleStatus.JOB_NAME, getJobName());
-        jsonObj.put(SimpleStatus.JOB_STARTING_TEMP, getJobStartingTemp());
-        jsonObj.put(SimpleStatus.JOB_COOLING_RATE, getJobCoolingRate());
         jsonObj.put(SimpleStatus.JOB_STARTING_TIME, getStartingTime());
         jsonObj.put(SimpleStatus.TASK_SECONDS, getTaskTime());
         jsonObj.put(SimpleStatus.TASK_NAME, getJobTaskName());
@@ -512,55 +431,6 @@ public class MagellanJob {
         return ByteString.copyFromUtf8(json.toString());
     }
 
-    /**
-     * For every new task created, this function is called to determine its starting location. It uses
-     * an acceptance probability to decide whether or not the new task should start at the current best
-     * location or at a random location
-     *
-     * The acceptance probability to use here will simply be e^(h(A)/T) where A is the current best location
-     * and h(a) is the current best energy. We will choose the current best location as the starting location
-     * of the next task if  exponent < Random number between 0 and 1.
-     *
-     * If the temperature of the job is still hight, then there will be a greater tendence for the task to start
-     * at a random location. As the temeprature decreases, more of the new tasks will start their search at the
-     * current best location.
-     * @param taskId
-     * @return
-     */
-    private ByteString pickNewTaskStartingLocation(int taskTime, String taskName, String taskId, JSONObject job_data){
-        String location;
-        /*double lastEnergy;
-        if(!energyHistory.isEmpty()) {
-            lastEnergy = energyHistory.getLast();
-            double df = lastEnergy - jobBestEnergy;
-            if(df < 0){
-                System.out.println("PICKED BEST LOCATION");
-                location = jobCurrentBestSolution;
-            }else if(Math.exp(-df/jobTemp) > Math.random()){
-                System.out.println("PICKED RANDOM LOCATION");
-                location = "";
-            }else{
-                System.out.println("PICKED BEST LOCATION");
-                location = jobCurrentBestSolution;
-            }
-        } else {
-            System.out.println("PICKED RANDOM LOCATION");
-            location = "";
-        }*/
-
-
-        /*if(Math.exp(jobBestEnergy/jobTemp) > Math.random()) {*/
-        if(true){
-            //System.out.println("[" + jobID + "] Picked current best location");
-            location = jobCurrentBestSolution;
-        } else {
-            //System.out.println("[" + jobID + "] Picked random location");
-            location = "";
-        }
-
-        // TODO Need to pick a temperature here. According to internet this should actually be the cooling rate
-        return packTaskData(taskTime, taskName, location, taskId, job_data);
-    }
 
     enum JobState{
         INITIALIZED, RUNNING, PAUSED, STOP, DONE;
@@ -573,10 +443,6 @@ public class MagellanJob {
     public long getJobID() {return jobID;}
 
     public String getJobName() {return jobName;}
-
-    public double getJobStartingTemp(){ return jobStartingTemp;}
-
-    public double getJobCoolingRate(){ return jobCoolingRate; }
 
     public double getTaskTime(){ return jobTaskTime; }
 
