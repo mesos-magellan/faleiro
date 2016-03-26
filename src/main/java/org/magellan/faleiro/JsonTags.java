@@ -52,16 +52,12 @@ public abstract class JsonTags {
 
     // JSON tags used for persisting internal state of each job in zookeeper
     static class VerboseStatus {
-        public static final String CURRENT_ITERATION = "current_iteration";
-        public static final String CURRENT_TEMP = "current_temp";
-        public static final String NUM_TASKS_SENT = "num_tasks_sent";
-        public static final String TEMP_MIN = "temp_min";
         public static final String NUM_CPU = "num_cpu";
         public static final String NUM_MEM = "num_mem";
         public static final String NUM_NET_MBPS = "num_net_mbps";
         public static final String NUM_DISK = "num_disk";
         public static final String NUM_PORTS = "num_ports";
-        public static final String NUM_SIMULTANEOUS_TASKS = "num_simultaneous_tasks";
+        public static final String BITFIELD_FINISHED = "bitfield_finished";
     }
 
 }
