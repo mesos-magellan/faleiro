@@ -18,7 +18,7 @@ public class DataMonitorTest {
     ZookeeperService zks = null;
     MagellanFramework mf = null;
     DataMonitor dm;
-    
+
     @Before
     public void setUp() throws Exception {
         zks = mock(ZookeeperService.class);

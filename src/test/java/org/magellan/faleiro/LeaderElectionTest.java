@@ -50,6 +50,8 @@ public class LeaderElectionTest {
         children.add(childPrefix.substring(childPrefix.lastIndexOf('/') + 1) + follower1Id);
         children.add(childPrefix.substring(childPrefix.lastIndexOf('/') + 1) + follower2Id);
 
+        // Mock what each "scheduler" is supposed to see when they make calls to createNode and
+        // get children from zookeeper
         doReturn(elecRoot).when(mockzk_leader).createNode(eq(elecRoot),anyBoolean(),anyBoolean());
         doReturn(elecRoot+childPrefix+leaderId).when(mockzk_leader).createNode(eq(elecRoot + childPrefix),anyBoolean(),anyBoolean());
         doReturn(children).when(mockzk_leader).getChildren(eq(elecRoot),anyBoolean());

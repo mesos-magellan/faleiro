@@ -150,7 +150,8 @@ public class MagellanFramework implements Watcher {
         // Connect to zookeeper
         try {
             String zAddr = System.getenv("ZK_IP") + ":" + System.getenv("ZK_PORT");
-            zk = new ZookeeperService(zAddr,this);
+            ZooKeeper zooKeeper = new ZooKeeper(zAddr, 10000, this);
+            zk = new ZookeeperService(zooKeeper);
         } catch (IOException e) {
             log.log(Level.SEVERE, e.getMessage());
         }
