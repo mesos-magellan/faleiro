@@ -22,11 +22,10 @@ public abstract class JsonTags {
         public static final String TASK_SECONDS = "task_seconds";
         public static final String FITNESS_SCORE = "fitness_score";
         public static final String BEST_LOCATION = "best_location";
-        public static final String JOB_DATA = "job_data";
+        public static final String JOB_DATA = "problem_data";
         public static final String TASK_NAME = "name";
         public static final String TASK_COMMAND = "command";
         public static final String TASK_DIVISIONS = "divisions";
-        public static final String PROBLEM_DATA = "problem_data";
     }
 
     // JSON tags for information desired by the client that is related to the status/progress
