@@ -55,7 +55,6 @@ public class DataMonitor implements Watcher{
                     prevData = null;
                 }
             }
-
             // Create a thread that will write the system state of the magellan framework
             // every couple seconds to zookeeper.
             new Thread(){
@@ -63,9 +62,9 @@ public class DataMonitor implements Watcher{
                     while(true) {
                         try {
                             Thread.sleep(WRITE_DELAY);
-                            writeState(mframework.getVerboseSystemInfo());
+                            persistState();
                         } catch (InterruptedException e) {
-                            log.log(Level.SEVERE, e.getMessage());
+                            e.printStackTrace();
                         }
                     }
                 }
@@ -74,6 +73,14 @@ public class DataMonitor implements Watcher{
         } catch (UnsupportedEncodingException e) {
             log.log(Level.SEVERE, e.getMessage());
         }
+    }
+
+    /**
+     * Wrapper that writes current state of framework to zookeeper
+     * Used during testing
+     */
+    public void persistState(){
+        writeState(mframework.getVerboseSystemInfo());
     }
 
     /**
@@ -112,9 +119,9 @@ public class DataMonitor implements Watcher{
      * Note
      * @param state    JSONObject : state to be written
      */
-    public void writeState(JSONObject state) {
+    public boolean writeState(JSONObject state) {
         if (state == null){
-            return;
+            return false;
         }
 
         try {
@@ -125,6 +132,7 @@ public class DataMonitor implements Watcher{
                 log.log(Level.FINE, "Writing state to Zookeeper");
                 m_zk.setData(m_znode, newData);
                 prevData = newData;
+                return true;
             }
         } catch (UnsupportedEncodingException e) {
             log.log(Level.SEVERE, e.getMessage());
@@ -133,6 +141,7 @@ public class DataMonitor implements Watcher{
         } catch (KeeperException e) {
             log.log(Level.SEVERE, e.getMessage());
         }
+        return false;
     }
 
     @Override
