@@ -1,6 +1,6 @@
 language: java
 script:
-  - EXECUTOR_PATH="/usr/local/bin/enrique" mvn test
+  - EXECUTOR_PATH="/usr/local/bin/enrique" mvn clean test jacoco:report coveralls:report
 jdk:
   - oraclejdk8
 notifications:
