@@ -7,6 +7,7 @@ import org.junit.runners.MethodSorters;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+import static org.magellan.faleiro.JsonTags.WebAPI;
 
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -43,14 +44,14 @@ public class WebTest {
         JSONObject request = new JSONObject();
         JSONObject response = new JSONObject();
 
-        request.put("job_name", "Test Job");
-        request.put("job_time", 1);
-        request.put("module_url", "traveling-sailor");
-        request.put("job_data", new JSONObject().put("test-data", 12309134));
+        request.put(WebAPI.JOB_NAME, "Test Job");
+        request.put(WebAPI.JOB_TIME, 1);
+        request.put(WebAPI.MODULE_URL, "traveling-sailor");
+        request.put(WebAPI.MODULE_DATA, new JSONObject().put("test-data", 12309134));
         Integer status = Web.createJobResponse(request, response);
 
         assertTrue(status == 200);
-        Integer JobID = response.getInt("job_id");
+        Integer JobID = response.getInt(WebAPI.JOB_ID);
         assertTrue(JobID == 0);
 
         InitFailedFramework();
@@ -65,19 +66,19 @@ public class WebTest {
         JSONObject request = new JSONObject();
         JSONObject response = new JSONObject();
 
-        request.put("status", "pause");
+        request.put(WebAPI.STATUS, "pause");
         Integer status = Web.updateJobStatusResponse(request, response, "0");
 
         assertTrue(status == 200);
 
         request = new JSONObject();
-        request.put("status", "resume");
+        request.put(WebAPI.STATUS, "resume");
         status = Web.updateJobStatusResponse(request, response, "0");
 
         assertTrue(status == 200);
 
         request = new JSONObject();
-        request.put("status", "stop");
+        request.put(WebAPI.STATUS, "stop");
         status = Web.updateJobStatusResponse(request, response, "0");
 
         assertTrue(status == 200);
