@@ -1,6 +1,8 @@
 # faleiro
 Scheduler
 
+[![Build Status](https://travis-ci.org/mesos-magellan/faleiro.svg?branch=master)](https://travis-ci.org/mesos-magellan/faleiro)
+
 ## Setup
 
 ```bash
