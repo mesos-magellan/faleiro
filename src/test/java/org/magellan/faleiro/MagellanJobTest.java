@@ -75,26 +75,26 @@ public class MagellanJobTest {
         assertFalse(testBeginning.isDone());
     }
 
-    @Test
-    public void testProcessIncomingMessages() throws Exception {
-        JSONObject jso = new JSONObject();
-        jso.put(TaskData.FITNESS_SCORE,"1234");
-        jso.put(TaskData.BEST_LOCATION, "1234");
-
-        int prevFinishedTasks = testBeginning.getNumFinishedTasks();
-        int prevHistorySize = testBeginning.getEnergyHistory().size();
-        testBeginning.processIncomingMessages(jso.toString());
-
-        assertEquals(prevFinishedTasks + 1,testBeginning.getNumFinishedTasks());
-        assertEquals(prevHistorySize + 1, testBeginning.getEnergyHistory().size());
-
-        try {
-            testBeginning.processIncomingMessages(null);
-            assertTrue(true);
-        }catch (Exception e){
-            assertTrue(false);
-        }
-    }
+//    @Test
+//    public void testProcessIncomingMessages() throws Exception {
+//        JSONObject jso = new JSONObject();
+//        jso.put(TaskData.FITNESS_SCORE,"1234");
+//        jso.put(TaskData.BEST_LOCATION, "1234");
+//
+//        int prevFinishedTasks = testBeginning.getNumFinishedTasks();
+//        int prevHistorySize = testBeginning.getEnergyHistory().size();
+//        testBeginning.processIncomingMessages(jso.toString());
+//
+//        assertEquals(prevFinishedTasks + 1,testBeginning.getNumFinishedTasks());
+//        assertEquals(prevHistorySize + 1, testBeginning.getEnergyHistory().size());
+//
+//        try {
+//            testBeginning.processIncomingMessages(null);
+//            assertTrue(true);
+//        }catch (Exception e){
+//            assertTrue(false);
+//        }
+//    }
 
     @Test
     public void testStop() throws Exception {
@@ -117,46 +117,46 @@ public class MagellanJobTest {
         assertEquals(testBeginning.getState(),MagellanJob.JobState.RUNNING);
     }
 
-    @Test
-    public void testGetStateSnapshot() throws Exception {
-        JSONObject state = testBeginning.getStateSnapshot();
-        assertEquals((Double) state.get(VerboseStatus.CURRENT_ITERATION), 0, 0);
-        assertEquals((Double) state.get(VerboseStatus.CURRENT_TEMP), 10, 0);
-        assertEquals((Integer) state.get(VerboseStatus.NUM_TASKS_SENT), 0, 0);
-        assertEquals((Double) state.get(VerboseStatus.TEMP_MIN), 0, 0);
-        assertEquals((Double) state.get(VerboseStatus.NUM_CPU), 1, 0);
-        assertEquals((Double) state.get(VerboseStatus.NUM_MEM), 32, 0);
-        assertEquals((Double) state.get(VerboseStatus.NUM_NET_MBPS), 0, 0);
-        assertEquals((Double) state.get(VerboseStatus.NUM_DISK), 0, 0);
-        assertEquals((Integer) state.get(VerboseStatus.NUM_PORTS), 0, 0);
-        assertEquals((Integer) state.get(VerboseStatus.NUM_SIMULTANEOUS_TASKS), 10, 0);
-    }
+//    @Test
+//    public void testGetStateSnapshot() throws Exception {
+//        JSONObject state = testBeginning.getStateSnapshot();
+//        assertEquals((Double) state.get(VerboseStatus.CURRENT_ITERATION), 0, 0);
+//        assertEquals((Double) state.get(VerboseStatus.CURRENT_TEMP), 10, 0);
+//        assertEquals((Integer) state.get(VerboseStatus.NUM_TASKS_SENT), 0, 0);
+//        assertEquals((Double) state.get(VerboseStatus.TEMP_MIN), 0, 0);
+//        assertEquals((Double) state.get(VerboseStatus.NUM_CPU), 1, 0);
+//        assertEquals((Double) state.get(VerboseStatus.NUM_MEM), 32, 0);
+//        assertEquals((Double) state.get(VerboseStatus.NUM_NET_MBPS), 0, 0);
+//        assertEquals((Double) state.get(VerboseStatus.NUM_DISK), 0, 0);
+//        assertEquals((Integer) state.get(VerboseStatus.NUM_PORTS), 0, 0);
+//        assertEquals((Integer) state.get(VerboseStatus.NUM_SIMULTANEOUS_TASKS), 10, 0);
+//    }
 
-    @Test
-    public void testGetSimpleStatus() throws Exception {
-        JSONObject simple = testBeginning.getSimpleStatus();
-        assertEquals((Long)simple.get(SimpleStatus.JOB_STARTING_TIME),System.currentTimeMillis(),500);
-        assertEquals((Long)simple.get(SimpleStatus.JOB_ID),3,0);
-        assertEquals((String)simple.get(SimpleStatus.JOB_NAME),"tester");
-        assertEquals((Double) simple.get(SimpleStatus.JOB_COUNT),2.0,0);
-        assertEquals((Double) simple.get(SimpleStatus.TASK_SECONDS),10,0);
-        assertEquals((String)simple.get(SimpleStatus.TASK_NAME),"task_tester");
-        assertEquals((String)simple.get(SimpleStatus.BEST_LOCATION),"");
-
-        JSONArray eh = simple.getJSONArray(SimpleStatus.ENERGY_HISTORY);
-
-        assertTrue(eh.length() == 0);
-        assertEquals((Integer) simple.get(SimpleStatus.NUM_FINISHED_TASKS),0,0);
-
-        try {
-            Double p = (Double) simple.get(SimpleStatus.ADDITIONAL_PARAMS);
-            assertTrue(false);
-        }catch (Exception e){
-            assertTrue(true);
-        }
-
-        assertEquals((MagellanJob.JobState) simple.get(SimpleStatus.CURRENT_STATE), MagellanJob.JobState.INITIALIZED);
-    }
+//    @Test
+//    public void testGetSimpleStatus() throws Exception {
+//        JSONObject simple = testBeginning.getSimpleStatus();
+//        assertEquals((Long)simple.get(SimpleStatus.JOB_STARTING_TIME),System.currentTimeMillis(),500);
+//        assertEquals((Long)simple.get(SimpleStatus.JOB_ID),3,0);
+//        assertEquals((String)simple.get(SimpleStatus.JOB_NAME),"tester");
+//        assertEquals((Double) simple.get(SimpleStatus.JOB_COUNT),2.0,0);
+//        assertEquals((Double) simple.get(SimpleStatus.TASK_SECONDS),10,0);
+//        assertEquals((String)simple.get(SimpleStatus.TASK_NAME),"task_tester");
+//        assertEquals((String)simple.get(SimpleStatus.BEST_LOCATION),"");
+//
+//        JSONArray eh = simple.getJSONArray(SimpleStatus.ENERGY_HISTORY);
+//
+//        assertTrue(eh.length() == 0);
+//        assertEquals((Integer) simple.get(SimpleStatus.NUM_FINISHED_TASKS),0,0);
+//
+//        try {
+//            Double p = (Double) simple.get(SimpleStatus.ADDITIONAL_PARAMS);
+//            assertTrue(false);
+//        }catch (Exception e){
+//            assertTrue(true);
+//        }
+//
+//        assertEquals((MagellanJob.JobState) simple.get(SimpleStatus.CURRENT_STATE), MagellanJob.JobState.INITIALIZED);
+//    }
 
 
 
@@ -173,16 +173,6 @@ public class MagellanJobTest {
     @Test
     public void testGetJobName() throws Exception {
         assertTrue(testBeginning.getJobName().equals("tester"));
-    }
-
-    @Test
-    public void testGetJobStartingTemp() throws Exception {
-        assertEquals(testBeginning.getJobStartingTemp(),10,0);
-    }
-
-    @Test
-    public void testGetJobCoolingRate() throws Exception {
-        assertEquals(testBeginning.getJobCoolingRate(),0.5,0);
     }
 
     @Test
@@ -226,10 +216,10 @@ public class MagellanJobTest {
         assertEquals(testBeginning.getNumFinishedTasks(),0);
     }
 
-    @Test
-    public void testGetNumTotalTasks() throws Exception {
-        assertEquals(testBeginning.getNumTotalTasks(),40);
-    }
+//    @Test
+//    public void testGetNumTotalTasks() throws Exception {
+//        assertEquals(testBeginning.getNumTotalTasks(),40);
+//    }
 
     @Test
     public void testStart() throws Exception {
