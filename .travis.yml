@@ -3,3 +3,7 @@ script:
   - EXECUTOR_PATH="/usr/local/bin/enrique" mvn test
 jdk:
   - oraclejdk8
+notifications:
+  slack:
+    rooms:
+      - mesos-magellan:5PrTLK3anCkczFrY3mBXHrGY#general
