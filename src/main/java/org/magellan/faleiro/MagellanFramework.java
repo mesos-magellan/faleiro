@@ -346,9 +346,6 @@ public class MagellanFramework implements Watcher {
         long id = numCreatedJobs++;
         MagellanJob j = new MagellanJob(id,
                                         jobName,
-                                        jobStartingTemp,
-                                        jobCoolingRate,
-                                        jobIterationsPerTemp,
                                         taskTime,
                                         taskName,
                                         additionalParameters);

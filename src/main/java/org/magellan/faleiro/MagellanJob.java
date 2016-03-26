@@ -53,11 +53,6 @@ public class MagellanJob {
     // The higher this is, the greater the change that we explore a greater area in our search space
     private double jobCoolingRate;
 
-    // Number of iterations for each decrease in temperature
-    // The higher this is, the greater the chance that we thoroughly explore the neighbors around our
-    // starting position
-    private int jobIterationsPerTemp;
-
     // How long each task runs for
     private int jobTaskTime;
 
@@ -86,8 +81,6 @@ public class MagellanJob {
 
     private int numFinishedTasks = 0;
 
-    private final int numTotalTasks;
-
     // Each job is limited to sending out a certain number of tasks at a time. Currently, this is
     // hardcoded to 10 but in time, this number should dynamically change depending on the number
     // of jobs running in the system.
@@ -114,31 +107,21 @@ public class MagellanJob {
      *
      * @param id Unique Job id
      * @param jName Name of job
-     * @param jStartingTemp Starting temperature of job. Higher means job runs for longer
-     * @param jCoolingRate Rate at which temperature depreciates each time
-     * @param jCount number of iterations per temperature for job
      * @param taskName Name of the task we want to execute on the executor side
      * @param jso Additional Job param
      */
     public MagellanJob(long id,
                        String jName,
-                       double jStartingTemp,
-                       double jCoolingRate,
-                       int jCount,
                        int taskTime,
                        String taskName,
                        JSONObject jso)
     {
         jobID = id;
         jobName = jName;
-        jobStartingTemp = jStartingTemp;
-        jobCoolingRate = jCoolingRate;
-        jobIterationsPerTemp = jCount;
         jobTaskTime = taskTime;
         jobTaskName = taskName;
         jobAdditionalParam = jso;
         taskExecutor = registerExecutor(System.getenv("EXECUTOR_PATH"));
-        numTotalTasks = (int)(jStartingTemp/jCoolingRate)*jCount + ((jStartingTemp%jCoolingRate!=0)?1:0);
         jobStartingTime = System.currentTimeMillis();
 
         TEMP_MIN = 0;
@@ -176,7 +159,6 @@ public class MagellanJob {
         jobName = j.getString(SimpleStatus.JOB_NAME);
         jobStartingTemp = j.getDouble(SimpleStatus.JOB_STARTING_TEMP);
         jobCoolingRate = j.getDouble(SimpleStatus.JOB_COOLING_RATE);
-        jobIterationsPerTemp = j.getInt(SimpleStatus.JOB_COUNT);
         jobTaskTime = j.getInt(SimpleStatus.TASK_SECONDS);
         jobTaskName = j.getString(SimpleStatus.TASK_NAME);
         jobCurrentBestSolution = j.getString(SimpleStatus.BEST_LOCATION);
@@ -184,10 +166,8 @@ public class MagellanJob {
         energyHistory = (new Gson()).fromJson(j.getString(SimpleStatus.ENERGY_HISTORY), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
         numFinishedTasks = j.getInt(SimpleStatus.NUM_FINISHED_TASKS);
         numTasksSent = numFinishedTasks;
-        numTotalTasks = j.getInt(SimpleStatus.NUM_TOTAL_TASKS);
         jobAdditionalParam = j.getJSONObject(SimpleStatus.ADDITIONAL_PARAMS);
         state = (new Gson()).fromJson(j.getString(SimpleStatus.CURRENT_STATE), JobState.class);
-        currentTemp = jobStartingTemp - (numFinishedTasks/jobIterationsPerTemp) * jobCoolingRate;
 
 
         taskExecutor = registerExecutor("/usr/local/bin/enrique");
@@ -489,7 +469,6 @@ public class MagellanJob {
         jsonObj.put(SimpleStatus.JOB_NAME, getJobName());
         jsonObj.put(SimpleStatus.JOB_STARTING_TEMP, getJobStartingTemp());
         jsonObj.put(SimpleStatus.JOB_COOLING_RATE, getJobCoolingRate());
-        jsonObj.put(SimpleStatus.JOB_COUNT, getJobIterations());
         jsonObj.put(SimpleStatus.JOB_STARTING_TIME, getStartingTime());
         jsonObj.put(SimpleStatus.TASK_SECONDS, getTaskTime());
         jsonObj.put(SimpleStatus.TASK_NAME, getJobTaskName());
@@ -599,8 +578,6 @@ public class MagellanJob {
 
     public double getJobCoolingRate(){ return jobCoolingRate; }
 
-    public double getJobIterations(){ return jobIterationsPerTemp; }
-
     public double getTaskTime(){ return jobTaskTime; }
 
     public String getJobTaskName() {return jobTaskName;}
@@ -621,5 +598,5 @@ public class MagellanJob {
 
     public int getNumFinishedTasks(){ return numFinishedTasks;}
 
-    public int getNumTotalTasks() {return numTotalTasks;}
+    public int getNumTotalTasks() {return returnedResult.length();}
 }

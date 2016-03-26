@@ -23,9 +23,6 @@ public class MagellanJobTest {
     public void setUp() throws Exception {
         testBeginning = new MagellanJob(3,                  // Id
                                         "tester",           // Job name
-                                        10,                 // Starting Temp
-                                        0.5,                // Cooling rate
-                                        2,                  // Iterations per temp
                                         10,                 // Task time
                                         "task_tester",      // task name
                                         null);              // additional parameters
@@ -186,11 +183,6 @@ public class MagellanJobTest {
     @Test
     public void testGetJobCoolingRate() throws Exception {
         assertEquals(testBeginning.getJobCoolingRate(),0.5,0);
-    }
-
-    @Test
-    public void testGetJobIterations() throws Exception {
-        assertEquals(testBeginning.getJobIterations(),2,0);
     }
 
     @Test
