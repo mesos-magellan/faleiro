@@ -47,7 +47,6 @@ public class WebTest {
         request.put(WebAPI.JOB_NAME, "Test Job");
         request.put(WebAPI.JOB_TIME, 1);
         request.put(WebAPI.MODULE_URL, "traveling-sailor");
-        request.put(WebAPI.MODULE_DATA, new JSONObject().put("test-data", 12309134));
         Integer status = Web.createJobResponse(request, response);
 
         assertTrue(status == 200);
@@ -58,6 +57,12 @@ public class WebTest {
         status = Web.createJobResponse(request, response);
 
         assertTrue(status == 500);
+
+        InitWorkingFramework(false);
+        request = new JSONObject();
+        response = new JSONObject();
+        status = Web.createJobResponse(request, response);
+        assertTrue(status == 422);
     }
 
     @Test
@@ -84,6 +89,12 @@ public class WebTest {
         assertTrue(status == 200);
 
         request = new JSONObject();
+        status = Web.updateJobStatusResponse(request, response, "0");
+
+        assertTrue(status == 422);
+
+        request = new JSONObject();
+        request.put(WebAPI.STATUS, "foobar");
         status = Web.updateJobStatusResponse(request, response, "0");
 
         assertTrue(status == 422);
