@@ -12,6 +12,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DataMonitor implements Watcher{
 
@@ -27,10 +29,13 @@ public class DataMonitor implements Watcher{
 
     private MagellanFramework mframework;
 
+    private static final Logger log = Logger.getLogger(DataMonitor.class.getName());
+
     public DataMonitor(ZookeeperService zk, String znode, MagellanFramework framework) {
         this.m_zk = zk;
         this.m_znode = znode;
         this.mframework = framework;
+        log.log(Level.CONFIG, "DataMonitor created. Storage root node is " + znode);
     }
 
     public void initialize(){
@@ -43,8 +48,9 @@ public class DataMonitor implements Watcher{
                 try {
                     initialState = new JSONObject(new String(retrievedState, "US-ASCII"));
                     prevData = initialState.toString().getBytes("UTF-8");
-                    System.out.println("[DATA MONITOR] - DISCOVERED PREVIOUS STATE");
+                    log.log( Level.INFO, "Discovered previous state");
                 }catch (JSONException e){
+                    log.log( Level.INFO, "Previous state does not exist in Zookeeper");
                     initialState = null;
                     prevData = null;
                 }
@@ -59,14 +65,14 @@ public class DataMonitor implements Watcher{
                             Thread.sleep(WRITE_DELAY);
                             writeState(mframework.getVerboseSystemInfo());
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            log.log(Level.SEVERE, e.getMessage());
                         }
                     }
                 }
             }.start();
 
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
     }
 
@@ -93,7 +99,7 @@ public class DataMonitor implements Watcher{
         try {
             return new JSONObject(new String(prevData, "US-ASCII"));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
         return null;
     }
@@ -116,21 +122,21 @@ public class DataMonitor implements Watcher{
 
             // Record changes only if the state has changed
             if(prevData == null || !Arrays.equals(prevData, newData)) {
-                System.out.println("[DATA MONITOR] - PERSISTING STATE TO ZOOKEEPER");
+                log.log(Level.FINE, "Writing state to Zookeeper");
                 m_zk.setData(m_znode, newData);
                 prevData = newData;
             }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         } catch (KeeperException e) {
-            e.printStackTrace();
+            log.log(Level.SEVERE, e.getMessage());
         }
     }
 
     @Override
     public void process(WatchedEvent event) {
-        System.out.println("[DATA MONITOR] - EVENT RECEIVED: " + event);
+        log.log(Level.FINE, "Event Received: " + event);
     }
 }
