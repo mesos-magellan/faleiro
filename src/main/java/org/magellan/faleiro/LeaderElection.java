@@ -42,6 +42,7 @@ public class LeaderElection  implements Watcher{
         Collections.sort(childNodePaths);
 
         int index = childNodePaths.indexOf(m_childNodePath.substring(m_childNodePath.lastIndexOf('/') + 1));
+
         if(index == 0) {
             log.log(Level.INFO, "This scheduler has just been elected leader!");
             synchronized (m_lock) {
@@ -92,5 +93,37 @@ public class LeaderElection  implements Watcher{
             }
         }
 
+    }
+
+    /**
+     * Returns true if the current scheduler is the leader
+     * @return
+     */
+    public boolean isLeader(){
+        return m_isLeader;
+    }
+
+    /**
+     * Returns the root node used for leader election in zookeeper
+     * @return
+     */
+    public String getElectionRoot(){
+        return LEADER_ELECTION_ROOT_NODE;
+    }
+
+    /**
+     * Returns the prefix used in the naming of child nodes in zookeeper
+     * @return
+     */
+    public String getChildNodePrefix(){
+        return CHILD_NODE_PREFIX;
+    }
+
+    /**
+     * Returns path of node being watched
+     * @return
+     */
+    public String getWatchedNodePath(){
+        return m_watchedNodePath;
     }
 }
