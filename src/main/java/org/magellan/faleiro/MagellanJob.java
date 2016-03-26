@@ -479,7 +479,13 @@ public class MagellanJob {
 
     public Protos.ExecutorInfo getTaskExecutor() { return taskExecutor; }
 
-    public int getNumFinishedTasks(){ return finishedTasks.cardinality();}
+    public int getNumFinishedTasks(){
+        if(division_is_done){
+            return finishedTasks.cardinality();
+        }else{
+            return 0;
+        }
+    }
 
     public int getNumTasksSent(){ return currentTask;}
 
