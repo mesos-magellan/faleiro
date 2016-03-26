@@ -1,0 +1,5 @@
+language: java
+script:
+  - EXECUTOR_PATH="/usr/local/bin/enrique" mvn test
+jdk:
+  - oraclejdk8

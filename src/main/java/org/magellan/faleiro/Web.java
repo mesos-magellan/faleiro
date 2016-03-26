@@ -4,9 +4,10 @@ import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
 import spark.Spark;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.magellan.faleiro.JsonTags.WebAPI;
 
 public class Web {
     private static final Logger log = Logger.getLogger(Web.class.getName());
@@ -29,10 +30,10 @@ public class Web {
         log.log(Level.INFO, "Initializing Spark web routes");
         Spark.post("/api/job", Web::createJob);
         Spark.options("/api/job", Web::createJobOptions);
-        Spark.put("/api/job/:job_id/status", Web::updateJobStatus);
-        Spark.options("/api/job/:job_id/status", Web::updateJobStatusOptions);
+        Spark.put("/api/job/:" + WebAPI.JOB_ID + "/status", Web::updateJobStatus);
+        Spark.options("/api/job/:" + WebAPI.JOB_ID + "/status", Web::updateJobStatusOptions);
         Spark.get("/api/jobs", Web::getJobList);
-        Spark.get("/api/job/:job_id", Web::getJob);
+        Spark.get("/api/job/:" + WebAPI.JOB_ID, Web::getJob);
     }
 
     /**
@@ -72,28 +73,28 @@ public class Web {
 
         JSONObject jsonReq = new JSONObject(req.body());
         JSONObject jsonRes = new JSONObject();
-        log.log(Level.FINE, "createJob", req);
+        log.log(Level.FINE, req.toString(), req);
         res.status(createJobResponse(jsonReq, jsonRes));
 
         return jsonRes.toString();
     }
 
     public static Integer createJobResponse(final JSONObject request, JSONObject response) {
-        if(request.isNull("job_name")
-                || request.isNull("job_time")
-                || request.isNull("module_url")) {
-            response.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "(422) : " + response.getString("message"), request);
+        if(request.isNull(WebAPI.JOB_NAME)
+                || request.isNull(WebAPI.JOB_TIME)
+                || request.isNull(WebAPI.MODULE_URL)) {
+            response.put(WebAPI.MESSAGE, "A parameter is missing");
+            log.log(Level.WARNING, "(422) : " + response.getString(WebAPI.MESSAGE), request);
             return 422;
         }
 
-        String jobName = request.getString("job_name");
+        String jobName = request.getString(WebAPI.JOB_NAME);
         Integer jobInitTemp = 100;
         Integer jobIterationsPerTemp = 100;
         Double jobInitCoolingRate = 0.1;
-        Integer taskTime = request.getInt("job_time");
-        String moduleUrl = request.getString("module_url");
-        JSONObject jobData = request.optJSONObject("module_data");
+        Integer taskTime = request.getInt(WebAPI.JOB_TIME);
+        String moduleUrl = request.getString(WebAPI.MODULE_URL);
+        JSONObject jobData = request.optJSONObject(WebAPI.MODULE_DATA);
         if(jobData == null) {
             jobData = new JSONObject();
         }
@@ -102,11 +103,11 @@ public class Web {
                 , taskTime, moduleUrl, jobData);
 
         if(jobId < 0) {
-            response.put("message", "Failed to create job internally");
-            log.log(Level.WARNING, "(500) : " + response.getString("message"), request);
+            response.put(WebAPI.MESSAGE, "Failed to create job internally");
+            log.log(Level.WARNING, "(500) : " + response.getString(WebAPI.MESSAGE), request);
             return 500;
         } else {
-            response.put("job_id", jobId);
+            response.put(WebAPI.JOB_ID, jobId);
             log.log(Level.FINE, "Create job ID: " + jobId, request);
             return 200;
         }
@@ -148,28 +149,28 @@ public class Web {
 
         JSONObject jsonReq = new JSONObject(req.body());
         JSONObject jsonRes = new JSONObject();
-        log.log(Level.FINE, "updateJobStatus", req);
+        log.log(Level.FINE, req.toString(), req);
 
-        if(!req.params().containsKey(":job_id")) {
-            jsonRes.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "(422) : " + jsonRes.getString("message"), req);
+        if(!req.params().containsKey(":" + WebAPI.JOB_ID)) {
+            jsonRes.put(WebAPI.MESSAGE, "A parameter is missing");
+            log.log(Level.WARNING, "(422) : " + jsonRes.getString(WebAPI.MESSAGE), req);
             res.status(422);
             return jsonRes.toString();
         }
 
-        res.status(updateJobStatusResponse(jsonReq, jsonRes, req.params(":job_id")));
+        res.status(updateJobStatusResponse(jsonReq, jsonRes, req.params(":" + WebAPI.JOB_ID)));
 
         return jsonRes.toString();
     }
 
     public static Integer updateJobStatusResponse(final JSONObject request, JSONObject response, String job_id) {
-        if(request.isNull("status")) {
-            response.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "(422) : " + response.getString("message") + " Job ID : " + job_id, request);
+        if(request.isNull(WebAPI.STATUS)) {
+            response.put(WebAPI.MESSAGE, "A parameter is missing");
+            log.log(Level.WARNING, "(422) : " + response.getString(WebAPI.MESSAGE) + " Job ID : " + job_id, request);
             return 422;
         }
 
-        String status = request.getString("status");
+        String status = request.getString(WebAPI.STATUS);
         Long jobId = Long.parseLong(job_id);
 
         switch (status) {
@@ -183,8 +184,8 @@ public class Web {
                 framework.stopJob(jobId);
                 break;
             default:
-                response.put("message", "Invalid parameter value");
-                log.log(Level.WARNING, "(422) : " + response.getString("message") + " Job ID : " + job_id, request);
+                response.put(WebAPI.MESSAGE, "Invalid parameter value");
+                log.log(Level.WARNING, "(422) : " + response.getString(WebAPI.MESSAGE) + " Job ID : " + job_id, request);
                 return 422;
         }
 
@@ -234,7 +235,7 @@ public class Web {
         res.header("Access-Control-Allow-Origin", "*");
         res.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
         res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
-        log.log(Level.FINE, "getJobList", req);
+        log.log(Level.FINE, req.toString(), req);
         return framework.getSimpleAllJobStatuses().toString();
     }
 
@@ -274,19 +275,19 @@ public class Web {
         res.header("Access-Control-Allow-Origin", "*");
         res.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
         res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
-        log.log(Level.FINE, "getJob", req);
+        log.log(Level.FINE, req.toString(), req);
 
-        if(!req.params().containsKey(":job_id")) {
+        if(!req.params().containsKey(":" + WebAPI.JOB_ID)) {
             JSONObject jsonRes = new JSONObject();
             res.status(422);
-            jsonRes.put("message", "A parameter is missing");
-            log.log(Level.WARNING, "(422) : " + jsonRes.getString("message"), req);
+            jsonRes.put(WebAPI.MESSAGE, "A parameter is missing");
+            log.log(Level.WARNING, "(422) : " + jsonRes.getString(WebAPI.MESSAGE), req);
             return jsonRes.toString();
         }
 
         JSONObject response = new JSONObject();
-        res.status(getJobResponse(response, req.params(":job_id")));
-        return response.getJSONObject("response").toString();
+        res.status(getJobResponse(response, req.params(":" + WebAPI.JOB_ID)));
+        return response.getJSONObject(WebAPI.RESPONSE).toString();
     }
 
     public static Integer getJobResponse(JSONObject response, String job_id) {
@@ -295,7 +296,7 @@ public class Web {
         if(!framework.isDone(jobId)) {
             status = 202;
         }
-        response.put("response", framework.getSimpleJobStatus(jobId));
+        response.put(WebAPI.RESPONSE, framework.getSimpleJobStatus(jobId));
         log.log(Level.FINE, "Got job details for ID : " + job_id + " status code is " + status , response);
         return status;
     }

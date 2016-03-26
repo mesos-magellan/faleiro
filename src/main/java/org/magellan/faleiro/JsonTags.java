@@ -3,6 +3,18 @@ package org.magellan.faleiro;
 
 public abstract class JsonTags {
 
+    // JSON tags used within the Web API
+    static class WebAPI {
+        public static final String JOB_NAME = "job_name";
+        public static final String JOB_TIME = "job_time";
+        public static final String MODULE_URL = "module_url";
+        public static final String MODULE_DATA = "module_data";
+        public static final String JOB_ID = "job_id";
+        public static final String MESSAGE = "message";
+        public static final String STATUS = "status";
+        public static final String RESPONSE = "response";
+    }
+
     // JSON tags for messages passed between the executor and scheduler
     static class TaskData {
         public static final String LOCATION = "location";
