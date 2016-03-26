@@ -6,6 +6,6 @@ jdk:
 notifications:
   slack:
     rooms:
-      - mesos-magellan:5PrTLK3anCkczFrY3mBXHrGY#general
+      - mesos-magellan:5PrTLK3anCkczFrY3mBXHrGY#faleiro
 after_success:
   - mvn clean test jacoco:report coveralls:report
