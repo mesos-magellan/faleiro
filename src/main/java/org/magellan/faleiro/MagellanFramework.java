@@ -311,9 +311,6 @@ public class MagellanFramework implements Watcher {
      * Creates a job and runs it on a separate thread
      *
      * @param jobName Name of job
-     * @param jobStartingTemp Starting temperature of job. Higher means job runs for longer
-     * @param jobCoolingRate Rate at which temperature depreciates each time
-     * @param jobIterationsPerTemp number of iterations per temperature for job
      * @param taskName - Name of the task on the executor to run
      * @param taskTime - How long to run each task for.
      * @param additionalParameters Additional job parameters
@@ -322,18 +319,12 @@ public class MagellanFramework implements Watcher {
      *          -1 if invalid parameters
      */
     public long createJob(String jobName,
-                          int jobStartingTemp,
-                          double jobCoolingRate,
-                          int jobIterationsPerTemp,
                           int taskTime,
                           String taskName,
                           JSONObject additionalParameters)
     {
 
         if (jobName == null ||
-                jobStartingTemp <= 0 ||
-                jobCoolingRate <= 0 ||
-                jobIterationsPerTemp <= 0 ||
                 taskTime <= 0 ||
                 taskName == null ||
                 additionalParameters == null)
