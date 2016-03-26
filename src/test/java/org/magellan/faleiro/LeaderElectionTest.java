@@ -18,9 +18,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
-/**
- * Created by koushik on 25/03/16.
- */
+
 public class LeaderElectionTest {
     private String leaderId = "001";
     private String follower1Id = "002";
