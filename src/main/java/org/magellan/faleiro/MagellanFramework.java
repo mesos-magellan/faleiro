@@ -459,7 +459,7 @@ public class MagellanFramework implements Watcher {
             if(j_id == j_stop_id){
                 log.log(Level.INFO, "Killing task with id: " + pair.getKey());
                 mesosDriver.get().killTask(Protos.TaskID.newBuilder().setValue((String)pair.getKey()).build());
-                submittedTaskIdsToJobIds.remove(pair.getKey());
+                //submittedTaskIdsToJobIds.remove(pair.getKey());
             }
         }
     }
