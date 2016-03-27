@@ -135,7 +135,7 @@ public class MagellanJob {
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
         if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
-            finishedTasks = Bits.convert((Long)j.get(VerboseStatus.BITFIELD_FINISHED));
+            finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
@@ -312,20 +312,20 @@ public class MagellanJob {
     /**
      * Called by magellan framework when a message from the executor is sent to this job. This message
      * could indicate that the task was successful, or failed.
-     * @param state : Indicates the status of the task. Could be TASK_FINISHED, TASK_ERROR, TASK_FAILED,
+     * @param taskState : Indicates the status of the task. Could be TASK_FINISHED, TASK_ERROR, TASK_FAILED,
      *                  TASK_LOST
      * @param taskId : Id of the task
      * @param data   : Data of the task
      */
-    public void processIncomingMessages(Protos.TaskState state, String taskId, String data) {
+    public void processIncomingMessages(Protos.TaskState taskState, String taskId, String data) {
         log.log(Level.INFO, "processIncomingMessages: state: " + state + " , taskId: " + taskId + " , data: " + data);
-        switch (state) {
+        switch (taskState) {
             case TASK_ERROR:
             case TASK_FAILED:
             case TASK_LOST:
-
-                // TODO: recschedule this task
-
+                if(state == JobState.RUNNING){
+                    log.log(Level.WARNING, "processIncomingMessages: state: " + state + " , taskId: " + taskId + " , data: " + data);
+                }
         }
 
         if(data == null){
