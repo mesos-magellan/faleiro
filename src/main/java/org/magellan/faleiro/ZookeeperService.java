@@ -15,12 +15,8 @@ public class ZookeeperService {
     private ZooKeeper zooKeeper;
     private static final Logger log = Logger.getLogger(ZookeeperService.class.getName());
 
-    public ZookeeperService(final String url, final Watcher processNodeWatcher) throws IOException {
-        try {
-            zooKeeper = new ZooKeeper(url, 10000, processNodeWatcher);
-        } catch (IOException e) {
-            log.log(Level.SEVERE, e.getMessage());
-        }
+    public ZookeeperService(ZooKeeper zooKeeper) throws IOException {
+        this.zooKeeper = zooKeeper;
     }
 
     /**

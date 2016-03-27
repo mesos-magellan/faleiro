@@ -61,7 +61,7 @@ public class MagellanJobTest {
         j.put("fitness_score", "88843.54807018393");
         j.put("uid",4);
         // Pas results to job
-        testBeginning.processIncomingMessages(j.toString());
+        testBeginning.processIncomingMessages(Protos.TaskState.TASK_FINISHED, "0_0", j.toString());
         //Give the job some time to update internal state
         try{Thread.sleep(100);}catch(InterruptedException ie){}
 
@@ -75,26 +75,28 @@ public class MagellanJobTest {
         assertFalse(testBeginning.isDone());
     }
 
-//    @Test
-//    public void testProcessIncomingMessages() throws Exception {
-//        JSONObject jso = new JSONObject();
-//        jso.put(TaskData.FITNESS_SCORE,"1234");
-//        jso.put(TaskData.BEST_LOCATION, "1234");
-//
-//        int prevFinishedTasks = testBeginning.getNumFinishedTasks();
-//        int prevHistorySize = testBeginning.getEnergyHistory().size();
-//        testBeginning.processIncomingMessages(jso.toString());
-//
-//        assertEquals(prevFinishedTasks + 1,testBeginning.getNumFinishedTasks());
-//        assertEquals(prevHistorySize + 1, testBeginning.getEnergyHistory().size());
-//
-//        try {
-//            testBeginning.processIncomingMessages(null);
-//            assertTrue(true);
-//        }catch (Exception e){
-//            assertTrue(false);
-//        }
-//    }
+
+    @Test
+    public void testProcessIncomingMessages() throws Exception {
+        JSONObject jso = new JSONObject();
+        jso.put(TaskData.FITNESS_SCORE,"1234");
+        jso.put(TaskData.BEST_LOCATION, "1234");
+
+        int prevFinishedTasks = testBeginning.getNumFinishedTasks();
+        int prevHistorySize = testBeginning.getEnergyHistory().size();
+        testBeginning.processIncomingMessages(Protos.TaskState.TASK_FINISHED, "0_0", jso.toString());
+
+        assertEquals(prevFinishedTasks + 1,testBeginning.getNumFinishedTasks());
+        assertEquals(prevHistorySize + 1, testBeginning.getEnergyHistory().size());
+
+        try {
+            testBeginning.processIncomingMessages(Protos.TaskState.TASK_FINISHED, "0_0", null);;
+            assertTrue(true);
+        }catch (Exception e){
+            assertTrue(false);
+        }
+    }
+
 
     @Test
     public void testStop() throws Exception {
