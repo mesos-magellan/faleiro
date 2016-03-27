@@ -119,7 +119,7 @@ public class MagellanFramework implements Watcher {
     private final ConcurrentHashMap<Long, MagellanJob> jobsList = new ConcurrentHashMap<>();
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
     private final Map<String, MagellanTaskRequest> pendingTasksMap = new HashMap<>();
-    private final HashMap<String, Long> submittedTaskIdsToJobIds = new HashMap<>();
+    private final ConcurrentHashMap<String, Long> submittedTaskIdsToJobIds = new ConcurrentHashMap<>();
     private final HashMap<String, String> launchedTasks = new HashMap<>();
     private Watcher zookeeperWatcher = null;
     private ZookeeperService zk = null;
