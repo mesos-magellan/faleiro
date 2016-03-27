@@ -135,6 +135,7 @@ public class MagellanJob {
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
         if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
+            log.log(Level.SEVERE,"removed long finishedTasks is: " + finishedTasks);
             finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
         }
 
@@ -442,8 +443,10 @@ public class MagellanJob {
         jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
         if(finishedTasks == null){
             // if null wipe entry
+            log.log(Level.SEVERE,"inserting long finishedTasks is: " + finishedTasks);
             jsonObj.put(VerboseStatus.BITFIELD_FINISHED, finishedTasks);
         }else {
+            log.log(Level.SEVERE,"inserting long finishedTasks is: " + finishedTasks);
             jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
         }
 
