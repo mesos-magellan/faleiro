@@ -260,14 +260,7 @@ public class MagellanJob {
             if(!finishedTasks.get(currentTask)){
                  /* got a list of all the partitions, create a task for each */
                 try {
-                    String newTaskId = "" + jobID + currentTask;
-                    JSONObject jsonTaskData = new JSONObject();
-                    jsonTaskData.put(TaskData.UID, newTaskId);
-                    jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
-                    jsonTaskData.put(TaskData.TASK_COMMAND, "anneal");
-                    jsonTaskData.put(TaskData.JOB_DATA, jobAdditionalParam);
-                    jsonTaskData.put(TaskData.TASK_DATA, returnedResult.get(currentTask));
-                    jsonTaskData.put(TaskData.MINUTES_PER_DIVISION, jobTaskTime/60.0);
+                    String newTaskId = "" + jobID + "_" + currentTask;
 
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
                             newTaskId,
@@ -277,7 +270,8 @@ public class MagellanJob {
                             NUM_NET_MBPS,
                             NUM_DISK,
                             NUM_PORTS,
-                            ByteString.copyFromUtf8(jsonTaskData.toString()));
+                            packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime, jobAdditionalParam, returnedResult.get(currentTask))
+                    );
 
                     // Add the task to the pending queue until the framework requests it
                     pendingTasks.put(newTask);
@@ -326,10 +320,12 @@ public class MagellanJob {
      * @param data   : Data of the task
      */
     public void processIncomingMessages(Protos.TaskState state, String taskId, String data) {
+        log.log(Level.INFO, "processIncomingMessages: state: " + state + " , taskId: " + taskId + " , data: " + data);
         switch (state) {
             case TASK_ERROR:
             case TASK_FAILED:
             case TASK_LOST:
+
                 // TODO: recschedule this task
 
         }
@@ -445,30 +441,23 @@ public class MagellanJob {
     /**
      * Takes the given parameters and packages it into a json formatted Bytestring which can be
      * packaged into a TaskInfo object by the magellan framework
-     * @param taskTime
-     * @param taskName
-     * @param location
-     * @param id
-     * @param job_data
+     * @param newTaskId
+     * @param jobTaskName
+     * @param command
+     * @param jobAdditionalParam
+     * @param taskData
      * @return
      */
-    private ByteString packTaskData(int taskTime, String taskName, String location, String id, JSONObject job_data){
-        JSONObject json = new JSONObject();
-        json.put(TaskData.UID, id);
-        json.put(TaskData.TASK_SECONDS, taskTime);
-        json.put(TaskData.JOB_DATA, job_data);
-        json.put(TaskData.TASK_NAME, taskName);
-        json.put(TaskData.FITNESS_SCORE, jobBestEnergy);
+    private ByteString packTaskData(String newTaskId, String jobTaskName, String command, int taskTime, JSONObject jobAdditionalParam, Object taskData){
+        JSONObject jsonTaskData = new JSONObject();
+        jsonTaskData.put(TaskData.UID, newTaskId);
+        jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
+        jsonTaskData.put(TaskData.TASK_COMMAND, command);
+        jsonTaskData.put(TaskData.MINUTES_PER_DIVISION, taskTime);
+        jsonTaskData.put(TaskData.JOB_DATA, jobAdditionalParam);
+        jsonTaskData.put(TaskData.TASK_DATA, taskData);
 
-        // If location is null, then we want the task to start at a random value.
-        if(location == jobCurrentBestSolution) {
-            json.put(TaskData.FITNESS_SCORE, jobBestEnergy);
-            json.put(TaskData.LOCATION, location);
-        } else {
-            json.put(TaskData.FITNESS_SCORE, "");
-            json.put(TaskData.LOCATION, location);
-        }
-        return ByteString.copyFromUtf8(json.toString());
+        return ByteString.copyFromUtf8(jsonTaskData.toString());
     }
 
 
