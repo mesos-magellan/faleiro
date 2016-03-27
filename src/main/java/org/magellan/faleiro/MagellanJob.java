@@ -55,7 +55,8 @@ public class MagellanJob {
     private JSONObject jobAdditionalParam = null;
 
     // A list of the best energies found by every task run by this job.
-    private ConcurrentLinkedDeque<Double> energyHistory = new ConcurrentLinkedDeque<>();
+    //private ConcurrentLinkedDeque<Double> energyHistory = new ConcurrentLinkedDeque<>();
+    private JSONArray energyHistory = new JSONArray();
 
     // This list stores tasks that are ready to be scheduled. This list is then consumed by the
     // MagellanFramework when it is ready to accept new tasks.
@@ -133,7 +134,9 @@ public class MagellanJob {
         NUM_NET_MBPS = j.getDouble(VerboseStatus.NUM_NET_MBPS);
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
-        finishedTasks = (BitSet)j.get(VerboseStatus.BITFIELD_FINISHED);
+        if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
+            finishedTasks = (BitSet) j.get(VerboseStatus.BITFIELD_FINISHED);
+        }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
         jobStartingTime = j.getLong(SimpleStatus.JOB_STARTING_TIME);
@@ -142,7 +145,7 @@ public class MagellanJob {
         jobTaskName = j.getString(SimpleStatus.TASK_NAME);
         jobCurrentBestSolution = j.getString(SimpleStatus.BEST_LOCATION);
         jobBestEnergy = j.getDouble(SimpleStatus.BEST_ENERGY);
-        energyHistory = (new Gson()).fromJson(j.getString(SimpleStatus.ENERGY_HISTORY), new TypeToken<ConcurrentLinkedDeque<Double>>(){}.getType());
+        energyHistory = j.getJSONArray(SimpleStatus.ENERGY_HISTORY);
         jobAdditionalParam = j.getJSONObject(SimpleStatus.ADDITIONAL_PARAMS);
         state = (new Gson()).fromJson(j.getString(SimpleStatus.CURRENT_STATE), JobState.class);
 
@@ -282,7 +285,9 @@ public class MagellanJob {
             Thread.yield();
         }
 
-        state = JobState.DONE;
+        if(state!=JobState.STOP) {
+            state = JobState.DONE;
+        }
         log.log(Level.INFO, "[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
     }
 
@@ -359,9 +364,7 @@ public class MagellanJob {
 
         finishedTasks.set(returnedTaskNum); // mark task as finished. needed for zookeeper state revival
 
-
-
-        energyHistory.add(fitness_score);
+        energyHistory.put(fitness_score);
         // If a better score was discovered, make this our global, best location
         if(fitness_score < jobBestEnergy) {
             jobCurrentBestSolution = best_location;
@@ -423,7 +426,7 @@ public class MagellanJob {
         jsonObj.put(SimpleStatus.TASK_NAME, getJobTaskName());
         jsonObj.put(SimpleStatus.BEST_LOCATION, getBestLocation());
         jsonObj.put(SimpleStatus.BEST_ENERGY, getBestEnergy());
-        jsonObj.put(SimpleStatus.ENERGY_HISTORY, new JSONArray(getEnergyHistory()));
+        jsonObj.put(SimpleStatus.ENERGY_HISTORY, getEnergyHistory());
         jsonObj.put(SimpleStatus.NUM_FINISHED_TASKS, getNumFinishedTasks());
         jsonObj.put(SimpleStatus.NUM_TOTAL_TASKS, getNumTotalTasks());
         jsonObj.put(SimpleStatus.ADDITIONAL_PARAMS, getJobAdditionalParam());
@@ -486,7 +489,7 @@ public class MagellanJob {
 
     public Long getStartingTime() { return jobStartingTime; }
 
-    public Queue<Double> getEnergyHistory() { return energyHistory; }
+    public JSONArray getEnergyHistory() { return energyHistory; }
 
     public Protos.ExecutorInfo getTaskExecutor() { return taskExecutor; }
 

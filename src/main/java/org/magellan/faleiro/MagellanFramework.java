@@ -1,6 +1,7 @@
 package org.magellan.faleiro;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.netflix.fenzo.*;
 import com.netflix.fenzo.functions.Action1;
 import com.netflix.fenzo.plugins.VMLeaseObject;
@@ -444,9 +445,23 @@ public class MagellanFramework implements Watcher {
      * @param jobID     ID of the job to stop
      */
     public void stopJob(Long jobID) {
-        MagellanJob j = jobsList.get(jobID);
-        if(j!=null){
-            j.stop();
+        MagellanJob j_stop = jobsList.get(jobID);
+        if(j_stop!=null){
+            j_stop.stop();
+        }
+
+        Iterator it = submittedTaskIdsToJobIds.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry pair = (Map.Entry)it.next();
+            MagellanJob j = (MagellanJob) pair.getValue();
+            if(j.getJobID() == j_stop.getJobID()){
+                try {
+                    mesosDriver.get().killTask(Protos.TaskID.parseFrom(((String)pair.getKey()).getBytes()));
+                    submittedTaskIdsToJobIds.remove(pair.getKey());
+                } catch (InvalidProtocolBufferException e) {
+                    log.log(Level.WARNING, "Parsing failed for TaskID: " + pair.getKey());
+                }
+            }
         }
     }
 
