@@ -209,7 +209,7 @@ public class MagellanJob {
             JSONObject jsonTaskData = new JSONObject();
             jsonTaskData.put(TaskData.UID, newTaskId);
             jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
-            jsonTaskData.put(TaskData.TASK_COMMAND, "divisions");
+            jsonTaskData.put(TaskData.TASK_COMMAND, TaskData.RESPONSE_DIVISIONS);
             jsonTaskData.put(TaskData.TASK_DIVISIONS, divisions);
             jsonTaskData.put(TaskData.JOB_DATA, jobAdditionalParam);
 
@@ -264,7 +264,7 @@ public class MagellanJob {
                     jsonTaskData.put(TaskData.UID, newTaskId);
                     jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
                     jsonTaskData.put(TaskData.TASK_COMMAND, "anneal");
-                    jsonTaskData.put(TaskData.JOB_DATA, returnedResult.getJSONObject(currentTask));
+                    jsonTaskData.put(TaskData.JOB_DATA, returnedResult.get(currentTask));
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
                             newTaskId,
                             jobName,
@@ -322,6 +322,15 @@ public class MagellanJob {
      * @param data   : Data of the task
      */
     public void processIncomingMessages(Protos.TaskState state, String taskId, String data) {
+        switch (state) {
+            case TASK_ERROR:
+
+            case TASK_FAILED:
+
+            case TASK_LOST:
+
+        }
+
         if(data == null){
             return;
         }
@@ -334,7 +343,7 @@ public class MagellanJob {
         if(returnedTaskId.equals(divisionTaskId)) {
             synchronized (division_lock) {
                 /* parse out the result to get list of tasks */
-                returnedResult = js.getJSONArray("divisions");
+                returnedResult = js.getJSONArray(TaskData.RESPONSE_DIVISIONS);
                 division_is_done = true;
                 division_lock.notify();
             }
