@@ -257,8 +257,26 @@ public class MagellanJob {
             // check if this index was already completed in a previous run, if so skip it
             if(!finishedTasks.get(currentTask)){
                  /* got a list of all the partitions, create a task for each */
-            }
+                try {
+                    String newTaskId = "" + jobID + "_" + currentTask;
 
+                    MagellanTaskRequest newTask = new MagellanTaskRequest(
+                            newTaskId,
+                            jobName,
+                            NUM_CPU,
+                            NUM_MEM,
+                            NUM_NET_MBPS,
+                            NUM_DISK,
+                            NUM_PORTS,
+                            packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime/(60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
+                    );
+
+                    // Add the task to the pending queue until the framework requests it
+                    pendingTasks.put(newTask);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         log.log(Level.INFO, "Finished sending tasks. Waiting now. Tasks sent = " + returnedResult.length());
@@ -317,18 +335,14 @@ public class MagellanJob {
         }
 
         if(!parts[1].equals("div")) {
-            log.log(Level.INFO, "is not a div");
             isDiv = false;
             returnedTaskNum = Integer.parseInt(strReturnedTaskNum);
-        }else{
-            log.log(Level.INFO, "is a div");
         }
 
         switch (taskState) {
             case TASK_ERROR:
             case TASK_FAILED:
             case TASK_LOST:
-                log.log(Level.INFO, "is an error response");
                 if(state != JobState.STOP){
                     log.log(Level.WARNING, "Problem with task, rescheduling it");
 
@@ -378,10 +392,7 @@ public class MagellanJob {
         }
 
         if(data == null){
-            log.log(Level.INFO, "data is null");
             return;
-        }else{
-            log.log(Level.INFO, "data is not null");
         }
 
         // Retrieve the data sent by the executor
@@ -391,18 +402,14 @@ public class MagellanJob {
 
 
         if(returnedTaskId.equals(divisionTaskId)) {
-            log.log(Level.INFO, "waiting for division_lock");
             synchronized (division_lock) {
                 /* parse out the result to get list of tasks */
                 returnedResult = js.getJSONArray(TaskData.RESPONSE_DIVISIONS);
                 division_is_done = true;
-                log.log(Level.INFO, "notifying division_lock");
                 division_lock.notify();
             }
-            log.log(Level.INFO, "returning");
             return;
         }
-        log.log(Level.INFO, "parsing out data for anneal task");
         /* not an error and not a division, get results */
         double fitness_score = js.getDouble(TaskData.FITNESS_SCORE);
         String best_location = js.getString(TaskData.BEST_LOCATION);
