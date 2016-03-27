@@ -206,7 +206,7 @@ public class MagellanJobTest {
 
     @Test
     public void testGetEnergyHistory() throws Exception {
-        assertEquals(testBeginning.getEnergyHistory().size(),0);
+        assertEquals(testBeginning.getEnergyHistory().length(),0);
     }
 
 
