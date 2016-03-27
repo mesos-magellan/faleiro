@@ -292,7 +292,9 @@ public class MagellanJob {
             Thread.yield();
         }
 
-        state = JobState.DONE;
+        if(state!=JobState.STOP) {
+            state = JobState.DONE;
+        }
         log.log(Level.INFO, "[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
     }
 
