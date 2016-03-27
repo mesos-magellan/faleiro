@@ -299,7 +299,8 @@ public class MagellanJob {
      * @param data   : Data of the task
      */
     public void processIncomingMessages(Protos.TaskState taskState, String taskId, String data) {
-        log.log(Level.INFO, "processIncomingMessages: state: " + state + " , taskId: " + taskId + " , data: " + data);
+        log.log(Level.INFO, "processIncomingMessages: state: " + state + " , taskId: " + taskId);
+        log.log(Level.FINER, "data: " + data);
         boolean isDiv = true;
         String[] parts = taskId.split("_");
         String strReturnedJobId = parts[0];
@@ -322,7 +323,7 @@ public class MagellanJob {
             case TASK_ERROR:
             case TASK_FAILED:
             case TASK_LOST:
-                if(state == JobState.RUNNING){
+                if(state != JobState.STOP){
                     log.log(Level.WARNING, "Problem with task, rescheduling it");
 
                     try {
@@ -354,11 +355,19 @@ public class MagellanJob {
                                     packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime / (60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
                             );
                         }
+                        while(state==JobState.PAUSED){
+                            Thread.yield();
+                            // wait while job is paused
+                        }
                         // Add the task to the pending queue until the framework requests it
                         pendingTasks.put(newTask);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                }
+                else{
+                    // ignore the response, task was killed intentionally
+                    return;
                 }
         }
 
