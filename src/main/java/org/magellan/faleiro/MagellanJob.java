@@ -135,7 +135,7 @@ public class MagellanJob {
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
         if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
-            finishedTasks = (BitSet) j.get(VerboseStatus.BITFIELD_FINISHED);
+            finishedTasks = Bits.convert((long)j.get(VerboseStatus.BITFIELD_FINISHED));
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
@@ -408,7 +408,7 @@ public class MagellanJob {
         jsonObj.put(VerboseStatus.NUM_NET_MBPS, NUM_NET_MBPS);
         jsonObj.put(VerboseStatus.NUM_DISK, NUM_DISK);
         jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
-        jsonObj.put(VerboseStatus.BITFIELD_FINISHED, finishedTasks);
+        jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
 
         return  jsonObj;
     }
