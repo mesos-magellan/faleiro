@@ -218,7 +218,7 @@ public class MagellanJob {
                     NUM_NET_MBPS,
                     NUM_DISK,
                     NUM_PORTS,
-                    packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, divisions, jobAdditionalParam, returnedResult.get(currentTask))
+                    packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
             );
             
             pendingTasks.put(newTask);
