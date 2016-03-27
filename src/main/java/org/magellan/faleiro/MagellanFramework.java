@@ -59,6 +59,13 @@ public class MagellanFramework implements Watcher {
                 case TASK_FAILED:
                 case TASK_LOST:
                     log.log(Level.WARNING, "Task Failure. Reason: " + taskStatus.getMessage());
+                    try {
+                        String data = new String(taskStatus.getData().toByteArray(), "UTF-8");
+                        processData(taskStatus.getState(), taskStatus.getTaskId().getValue(), data);
+                        submittedTaskIdsToJobIds.remove(taskStatus.getTaskId().getValue());
+                    }catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
                     break;
                 case TASK_FINISHED:
                     // Find which job this task is associated with at forward the message to it
@@ -68,7 +75,7 @@ public class MagellanFramework implements Watcher {
 
                         // Process the result of the task by forwarding the data to the job
                         // responsible for its creation
-                        processData(data, taskID);
+                        processData(taskStatus.getState(), taskID, data);
 
                         // Remove the tasks from data structures
                         submittedTaskIdsToJobIds.remove(taskID);
@@ -491,7 +498,7 @@ public class MagellanFramework implements Watcher {
      * @param slaveID   - ID of slave where this task will run
      * @param taskId    - Used to retrieve task specific data and the executor used to run
  *                        the task
-     * @return
+     * @return+
      */
     private Protos.TaskInfo getTaskInfo(Protos.SlaveID slaveID, final String taskId) {
 
@@ -591,9 +598,9 @@ public class MagellanFramework implements Watcher {
      * @param taskResult    - Response of finished task that needs to be processed
      * @param taskID        - Task Id of task that just finished
      */
-    private void processData(String taskResult, String taskID) {
+    private void processData(Protos.TaskState status, String taskID, String taskResult) {
         long jobId = submittedTaskIdsToJobIds.get(taskID);
-        jobsList.get(jobId).processIncomingMessages(taskResult);
+        jobsList.get(jobId).processIncomingMessages(status, taskID, taskResult);
     }
 
     /**

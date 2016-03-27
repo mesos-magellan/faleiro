@@ -293,11 +293,14 @@ public class MagellanJob {
     }
 
     /**
-     * Called by magellan framework when a message from the executor is sent to this job. This method
-     * processess the message and changes the best location and fitness store if needed.
-     * @param data
+     * Called by magellan framework when a message from the executor is sent to this job. This message
+     * could indicate that the task was successful, or failed.
+     * @param state : Indicates the status of the task. Could be TASK_FINISHED, TASK_ERROR, TASK_FAILED,
+     *                  TASK_LOST
+     * @param taskId : Id of the task
+     * @param data   : Data of the task
      */
-    public void processIncomingMessages(String data) {
+    public void processIncomingMessages(Protos.TaskState state, String taskId, String data) {
         if(data == null){
             return;
         }
