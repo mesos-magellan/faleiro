@@ -2,10 +2,10 @@
 
 set -x
 
-if [[ $ETH1_IP ]]; then
-  export LIBPROCESS_IP="$ETH1_IP"
-elif [[ $TUN0_IP ]]; then
-  export LIBPROCESS_IP="$TUN0_IP"
+if [[ `ip addr show eth1` ]]; then
+  export LIBPROCESS_IP="$(ip addr show eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)"
+elif [[ `ip addr show tun0` ]]; then
+  export LIBPROCESS_IP="$(ip addr show tun0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)"
 else
   echo "Neither ETH1_IP nor TUN0_IP was set!" 1>&2
   exit 1
