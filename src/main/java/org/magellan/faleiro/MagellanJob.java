@@ -233,7 +233,7 @@ public class MagellanJob {
         synchronized (division_lock) {
             try {
                 log.log(Level.INFO, "waiting for division_is_done");
-                while (!division_is_done) {
+                while (division_is_done.booleanValue() == false) {
                     division_lock.wait();
                 }
             } catch (InterruptedException e) {
@@ -466,13 +466,14 @@ public class MagellanJob {
         jsonObj.put(VerboseStatus.NUM_NET_MBPS, NUM_NET_MBPS);
         jsonObj.put(VerboseStatus.NUM_DISK, NUM_DISK);
         jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
-        if(finishedTasks == null){
+
+        if(division_is_done.booleanValue() == false){
             // if null wipe entry
-            log.log(Level.SEVERE,"inserting (null==true) long finishedTasks is: " + finishedTasks);
-            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, finishedTasks);
+            jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, false);
         }else {
-            log.log(Level.SEVERE,"inserting(null==false) long finishedTasks is: " + finishedTasks);
+            /* save all three states after division is complete */
             jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
+            jsonObj.put(TaskData.RESPONSE_DIVISIONS, returnedResult);
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
         }
 
