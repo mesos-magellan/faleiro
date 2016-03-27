@@ -206,14 +206,7 @@ public class MagellanJob {
 
             int divisions = 0;
 
-            JSONObject jsonTaskData = new JSONObject();
-            jsonTaskData.put(TaskData.UID, newTaskId);
-            jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
-            jsonTaskData.put(TaskData.TASK_COMMAND, TaskData.RESPONSE_DIVISIONS);
-            jsonTaskData.put(TaskData.JOB_DATA, jobAdditionalParam);
-            jsonTaskData.put(TaskData.TASK_DIVISIONS, divisions);
-
-
+            // Add the task to the pending queue until the framework requests it
             MagellanTaskRequest newTask = new MagellanTaskRequest(
                     newTaskId,
                     jobName,
@@ -222,9 +215,9 @@ public class MagellanJob {
                     NUM_NET_MBPS,
                     NUM_DISK,
                     NUM_PORTS,
-                    ByteString.copyFromUtf8(jsonTaskData.toString()));
-
-            // Add the task to the pending queue until the framework requests it
+                    packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, divisions, jobAdditionalParam, returnedResult.get(currentTask))
+            );
+            
             pendingTasks.put(newTask);
             divisionTaskId = newTaskId;
         } catch (InterruptedException e) {
@@ -270,7 +263,7 @@ public class MagellanJob {
                             NUM_NET_MBPS,
                             NUM_DISK,
                             NUM_PORTS,
-                            packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime, jobAdditionalParam, returnedResult.get(currentTask))
+                            packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime/(60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
                     );
 
                     // Add the task to the pending queue until the framework requests it
@@ -448,18 +441,26 @@ public class MagellanJob {
      * @param taskData
      * @return
      */
-    private ByteString packTaskData(String newTaskId, String jobTaskName, String command, int taskTime, JSONObject jobAdditionalParam, Object taskData){
+    private ByteString packTaskData(String newTaskId, String jobTaskName, String command, double taskTime, JSONObject jobAdditionalParam, Object taskData){
         JSONObject jsonTaskData = new JSONObject();
+        jsonTaskData.put(TaskData.MINUTES_PER_DIVISION, taskTime);
+        jsonTaskData.put(TaskData.TASK_DATA, taskData);
+        return packTaskData(jsonTaskData, newTaskId, jobTaskName, command, jobAdditionalParam);
+    }
+
+    private ByteString packTaskData(String newTaskId, String jobTaskName, String command, JSONObject jobAdditionalParam, int divisions){
+        JSONObject jsonTaskData = new JSONObject();
+        jsonTaskData.put(TaskData.TASK_DIVISIONS, divisions);
+        return packTaskData(jsonTaskData, newTaskId, jobTaskName, command, jobAdditionalParam);
+    }
+
+    private ByteString packTaskData(JSONObject jsonTaskData, String newTaskId, String jobTaskName, String command, JSONObject jobAdditionalParam){
         jsonTaskData.put(TaskData.UID, newTaskId);
         jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
         jsonTaskData.put(TaskData.TASK_COMMAND, command);
-        jsonTaskData.put(TaskData.MINUTES_PER_DIVISION, taskTime);
         jsonTaskData.put(TaskData.JOB_DATA, jobAdditionalParam);
-        jsonTaskData.put(TaskData.TASK_DATA, taskData);
-
         return ByteString.copyFromUtf8(jsonTaskData.toString());
     }
-
 
     enum JobState{
         INITIALIZED, RUNNING, PAUSED, STOP, DONE;
