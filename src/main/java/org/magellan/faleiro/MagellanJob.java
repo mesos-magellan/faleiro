@@ -210,8 +210,9 @@ public class MagellanJob {
             jsonTaskData.put(TaskData.UID, newTaskId);
             jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
             jsonTaskData.put(TaskData.TASK_COMMAND, TaskData.RESPONSE_DIVISIONS);
-            jsonTaskData.put(TaskData.TASK_DIVISIONS, divisions);
             jsonTaskData.put(TaskData.JOB_DATA, jobAdditionalParam);
+            jsonTaskData.put(TaskData.TASK_DIVISIONS, divisions);
+
 
             MagellanTaskRequest newTask = new MagellanTaskRequest(
                     newTaskId,
@@ -264,7 +265,10 @@ public class MagellanJob {
                     jsonTaskData.put(TaskData.UID, newTaskId);
                     jsonTaskData.put(TaskData.TASK_NAME, jobTaskName);
                     jsonTaskData.put(TaskData.TASK_COMMAND, "anneal");
-                    jsonTaskData.put(TaskData.JOB_DATA, returnedResult.get(currentTask));
+                    jsonTaskData.put(TaskData.JOB_DATA, jobAdditionalParam);
+                    jsonTaskData.put(TaskData.TASK_DATA, returnedResult.get(currentTask));
+                    jsonTaskData.put(TaskData.MINUTES_PER_DIVISION, jobTaskTime/60.0);
+
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
                             newTaskId,
                             jobName,
@@ -324,10 +328,9 @@ public class MagellanJob {
     public void processIncomingMessages(Protos.TaskState state, String taskId, String data) {
         switch (state) {
             case TASK_ERROR:
-
             case TASK_FAILED:
-
             case TASK_LOST:
+                // TODO: recschedule this task
 
         }
 
