@@ -64,11 +64,12 @@ public class DataMonitor implements Watcher{
                             Thread.sleep(WRITE_DELAY);
                             persistState();
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            log.log(Level.SEVERE, e.getMessage());
                         }
                     }
                 }
             }.start();
+            log.log(Level.INFO, "Finished Initializing DataMonitor");
 
         } catch (UnsupportedEncodingException e) {
             log.log(Level.SEVERE, e.getMessage());
@@ -129,7 +130,7 @@ public class DataMonitor implements Watcher{
 
             // Record changes only if the state has changed
             if(prevData == null || !Arrays.equals(prevData, newData)) {
-                log.log(Level.FINE, "Writing state to Zookeeper");
+                log.log(Level.INFO, "Writing state to Zookeeper");
                 m_zk.setData(m_znode, newData);
                 prevData = newData;
                 return true;

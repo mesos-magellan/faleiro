@@ -457,12 +457,9 @@ public class MagellanFramework implements Watcher {
             Map.Entry pair = (Map.Entry)it.next();
             Long j_id = (Long) pair.getValue();
             if(j_id == j_stop_id){
-                try {
-                    mesosDriver.get().killTask(Protos.TaskID.parseFrom(((String)pair.getKey()).getBytes()));
-                    submittedTaskIdsToJobIds.remove(pair.getKey());
-                } catch (InvalidProtocolBufferException e) {
-                    log.log(Level.WARNING, "Parsing failed for TaskID: " + pair.getKey());
-                }
+                log.log(Level.INFO, "Killing task with id: " + pair.getKey());
+                mesosDriver.get().killTask(Protos.TaskID.newBuilder().setValue((String)pair.getKey()).build());
+                submittedTaskIdsToJobIds.remove(pair.getKey());
             }
         }
     }
