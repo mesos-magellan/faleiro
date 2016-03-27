@@ -36,8 +36,6 @@ public abstract class JsonTags {
     static class SimpleStatus {
         public static final String JOB_ID = "job_id";
         public static final String JOB_NAME = "job_name";
-        public static final String JOB_STARTING_TEMP = "job_starting_temp";
-        public static final String JOB_COOLING_RATE = "job_cooling_rate";
         public static final String JOB_COUNT = "job_count";
         public static final String JOB_STARTING_TIME = "job_starting_time";
         public static final String TASK_SECONDS = "task_seconds";

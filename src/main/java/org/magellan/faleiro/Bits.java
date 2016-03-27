@@ -2,6 +2,9 @@ package org.magellan.faleiro;
 
 import java.util.BitSet;
 
+/* source: http://stackoverflow.com/questions/2473597/bitset-to-and-from-integer-long
+ * thanks to @Arne Burmeister
+ */
 public class Bits {
 
     public static BitSet convert(long value) {

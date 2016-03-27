@@ -408,7 +408,12 @@ public class MagellanJob {
         jsonObj.put(VerboseStatus.NUM_NET_MBPS, NUM_NET_MBPS);
         jsonObj.put(VerboseStatus.NUM_DISK, NUM_DISK);
         jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
-        jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
+        if(finishedTasks == null){
+            // if null wipe entry
+            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, finishedTasks);
+        }else {
+            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
+        }
 
         return  jsonObj;
     }
