@@ -401,9 +401,13 @@ public class MagellanJob {
 
         String returnedTaskId = js.getString(TaskData.UID);
 
+        log.log(Level.INFO, "returnedTaskId is " + returnedTaskId);
+        log.log(Level.INFO, "divisionTaskId is " + divisionTaskId);
 
         if(returnedTaskId.equals(divisionTaskId)) {
+            log.log(Level.INFO, "equal, now waiting for division_lock");
             synchronized (division_lock) {
+                log.log(Level.INFO, "equal, got division_lock");
                 /* parse out the result to get list of tasks */
                 returnedResult = js.getJSONArray(TaskData.RESPONSE_DIVISIONS);
                 division_is_done = true;
