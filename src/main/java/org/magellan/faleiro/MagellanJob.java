@@ -255,25 +255,6 @@ public class MagellanJob {
             // check if this index was already completed in a previous run, if so skip it
             if(!finishedTasks.get(currentTask)){
                  /* got a list of all the partitions, create a task for each */
-                try {
-                    String newTaskId = "" + jobID + "_" + currentTask;
-
-                    MagellanTaskRequest newTask = new MagellanTaskRequest(
-                            newTaskId,
-                            jobName,
-                            NUM_CPU,
-                            NUM_MEM,
-                            NUM_NET_MBPS,
-                            NUM_DISK,
-                            NUM_PORTS,
-                            packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime/(60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
-                    );
-
-                    // Add the task to the pending queue until the framework requests it
-                    pendingTasks.put(newTask);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             }
 
         }
@@ -319,12 +300,65 @@ public class MagellanJob {
      */
     public void processIncomingMessages(Protos.TaskState taskState, String taskId, String data) {
         log.log(Level.INFO, "processIncomingMessages: state: " + state + " , taskId: " + taskId + " , data: " + data);
+        boolean isDiv = true;
+        String[] parts = taskId.split("_");
+        String strReturnedJobId = parts[0];
+        long returnedJobId = Integer.parseInt(strReturnedJobId);
+        int returnedTaskNum = 0;
+        String strReturnedTaskNum = parts[1];
+
+        // check that task result is for me, should always be true
+        if(returnedJobId != this.jobID){
+            log.log(Level.SEVERE, "Job: " + getJobID() + " got task result meant for Job: " + returnedJobId);
+            System.exit(-1);
+        }
+
+        if(!parts[1].equals("div")) {
+            isDiv = false;
+            returnedTaskNum = Integer.parseInt(strReturnedTaskNum);
+        }
+
         switch (taskState) {
             case TASK_ERROR:
             case TASK_FAILED:
             case TASK_LOST:
                 if(state == JobState.RUNNING){
-                    log.log(Level.WARNING, "processIncomingMessages: state: " + state + " , taskId: " + taskId + " , data: " + data);
+                    log.log(Level.WARNING, "Problem with task, rescheduling it");
+
+                    try {
+                        String newTaskId = taskId;
+                        MagellanTaskRequest newTask;
+                        if(isDiv){
+                            int divisions = 0;
+
+                            // Add the task to the pending queue until the framework requests it
+                            newTask = new MagellanTaskRequest(
+                                    newTaskId,
+                                    jobName,
+                                    NUM_CPU,
+                                    NUM_MEM,
+                                    NUM_NET_MBPS,
+                                    NUM_DISK,
+                                    NUM_PORTS,
+                                    packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
+                            );
+                        }else {
+                            newTask = new MagellanTaskRequest(
+                                    newTaskId,
+                                    jobName,
+                                    NUM_CPU,
+                                    NUM_MEM,
+                                    NUM_NET_MBPS,
+                                    NUM_DISK,
+                                    NUM_PORTS,
+                                    packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime / (60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
+                            );
+                        }
+                        // Add the task to the pending queue until the framework requests it
+                        pendingTasks.put(newTask);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
         }
 
@@ -347,20 +381,9 @@ public class MagellanJob {
             return;
         }
 
+        /* not an error and not a division, get results */
         double fitness_score = js.getDouble(TaskData.FITNESS_SCORE);
         String best_location = js.getString(TaskData.BEST_LOCATION);
-
-        String[] parts = returnedTaskId.split("_");
-        String strReturnedJobId = parts[0];
-        long returnedJobId = Integer.parseInt(strReturnedJobId);
-        String strReturnedTaskNum = parts[1];
-        int returnedTaskNum = Integer.parseInt(strReturnedTaskNum);
-
-        // check that task result is for me, should always be true
-        if(returnedJobId != this.jobID){
-            log.log(Level.SEVERE, "Job: " + getJobID() + " got task result meant for Job: " + returnedJobId);
-            System.exit(-1);
-        }
 
         finishedTasks.set(returnedTaskNum); // mark task as finished. needed for zookeeper state revival
 
