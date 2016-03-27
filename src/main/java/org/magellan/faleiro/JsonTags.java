@@ -26,7 +26,9 @@ public abstract class JsonTags {
         public static final String TASK_NAME = "name";
         public static final String TASK_COMMAND = "command";
         public static final String TASK_DIVISIONS = "divisions";
+        public static final String TASK_DATA = "sstates";
         public static final String RESPONSE_DIVISIONS = "divisions";
+        public static final String MINUTES_PER_DIVISION = "minutes_per_division";
     }
 
     // JSON tags for information desired by the client that is related to the status/progress
