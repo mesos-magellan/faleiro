@@ -211,17 +211,20 @@ public class Web {
      *   {
      *     job_id : int,
      *     job_name : String,
-     *     job_starting_temp : int,
-     *     job_cooling_rate : double,
-     *     job_count : int,
-     *     task_starting_temp : int,
-     *     task_cooling_rate : double,
-     *     task_count : int,
+     *     job_starting_time : int,
+     *     task_name : String,
+     *     task_seconds : int,
+     *     current_state : String,
      *     best_location : String,
      *     best_energy : double,
+     *     num_finished_tasks : int,
+     *     num_total_tasks : int,
      *     energy_history : [
      *          double
-     *     ]
+     *     ],
+     *     additional_params : {
+     *         JSON
+     *     }
      *   }
      * ]
      */
@@ -247,17 +250,20 @@ public class Web {
      * {
      *     job_id : int,
      *     job_name : String,
-     *     job_starting_temp : int,
-     *     job_cooling_rate : double,
-     *     job_count : int,
-     *     task_starting_temp : int,
-     *     task_cooling_rate : double,
-     *     task_count : int,
+     *     job_starting_time : int,
+     *     task_name : String,
+     *     task_seconds : int,
+     *     current_state : String,
      *     best_location : String,
      *     best_energy : double,
+     *     num_finished_tasks : int,
+     *     num_total_tasks : int,
      *     energy_history : [
      *          double
-     *     ]
+     *     ],
+     *     additional_params : {
+     *         JSON
+     *     }
      * }
      * // Missing or Invalid parameter
      * Response(422):
