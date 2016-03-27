@@ -87,7 +87,7 @@ public class MagellanJob {
     /* json array of returned division. iterated through to make new tasks */
     private JSONArray returnedResult;
 
-    private BitSet finishedTasks;
+    private BitSet finishedTasks = null;
 
     private int currentTask;
 
@@ -137,6 +137,7 @@ public class MagellanJob {
         if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
             log.log(Level.SEVERE,"removed long finishedTasks is: " + finishedTasks);
             finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
+            division_is_done = j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED);
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
@@ -443,11 +444,12 @@ public class MagellanJob {
         jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
         if(finishedTasks == null){
             // if null wipe entry
-            log.log(Level.SEVERE,"inserting long finishedTasks is: " + finishedTasks);
+            log.log(Level.SEVERE,"inserting (null==true) long finishedTasks is: " + finishedTasks);
             jsonObj.put(VerboseStatus.BITFIELD_FINISHED, finishedTasks);
         }else {
-            log.log(Level.SEVERE,"inserting long finishedTasks is: " + finishedTasks);
+            log.log(Level.SEVERE,"inserting(null==false) long finishedTasks is: " + finishedTasks);
             jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
+            jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
         }
 
         return  jsonObj;

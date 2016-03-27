@@ -30,7 +30,6 @@ public abstract class JsonTags {
         public static final String RESPONSE_DIVISIONS = "divisions";
         public static final String MINUTES_PER_DIVISION = "minutes_per_division";
     }
-
     // JSON tags for information desired by the client that is related to the status/progress
     // of the job.
     static class SimpleStatus {
@@ -58,6 +57,6 @@ public abstract class JsonTags {
         public static final String NUM_DISK = "num_disk";
         public static final String NUM_PORTS = "num_ports";
         public static final String BITFIELD_FINISHED = "bitfield_finished";
+        public static final String DIVISION_IS_FINISHED = "divisions_is_finished";
     }
-
 }
