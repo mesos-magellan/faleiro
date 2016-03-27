@@ -328,9 +328,22 @@ public class MagellanJob {
 
         // Retrieve the data sent by the executor
         JSONObject js = new JSONObject(data);
+
+        String returnedTaskId = js.getString(TaskData.UID);
+
+        if(returnedTaskId.equals(divisionTaskId)) {
+            synchronized (division_lock) {
+                /* parse out the result to get list of tasks */
+                returnedResult = js.getJSONArray("divisions");
+                division_is_done = true;
+                division_lock.notify();
+            }
+            return;
+        }
+
         double fitness_score = js.getDouble(TaskData.FITNESS_SCORE);
         String best_location = js.getString(TaskData.BEST_LOCATION);
-        String returnedTaskId = js.getString(TaskData.UID);
+
         String[] parts = returnedTaskId.split("_");
         String strReturnedJobId = parts[0];
         long returnedJobId = Integer.parseInt(strReturnedJobId);
@@ -345,14 +358,7 @@ public class MagellanJob {
 
         finishedTasks.set(returnedTaskNum); // mark task as finished. needed for zookeeper state revival
 
-        if(returnedTaskId.equals(divisionTaskId)) {
-            synchronized (division_lock) {
-                /* parse out the result to get list of tasks */
-                returnedResult = js.getJSONArray("result");
-                division_is_done = true;
-                division_lock.notify();
-            }
-        }
+
 
         energyHistory.add(fitness_score);
         // If a better score was discovered, make this our global, best location
