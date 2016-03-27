@@ -135,7 +135,6 @@ public class MagellanJob {
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
         if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
-            log.log(Level.SEVERE,"removed long finishedTasks is: " + finishedTasks);
             finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
             division_is_done = j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED);
         }
@@ -230,9 +229,10 @@ public class MagellanJob {
         }
 
         /* lock until notified that division has returned */
+        log.log(Level.INFO, "waiting for to enter division_lock sync block");
         synchronized (division_lock) {
             try {
-                log.log(Level.INFO, "waiting for division to complete");
+                log.log(Level.INFO, "waiting for division_is_done");
                 while (!division_is_done) {
                     division_lock.wait();
                 }
@@ -243,6 +243,7 @@ public class MagellanJob {
 
         /* got result of division task */
         finishedTasks = new BitSet(returnedResult.length()); // initialize list of isFinished bits for each task. Persisted across crash.
+
         for (currentTask = 0; currentTask < returnedResult.length(); currentTask++) {
 
             while(state==JobState.PAUSED){
@@ -406,6 +407,7 @@ public class MagellanJob {
                 /* parse out the result to get list of tasks */
                 returnedResult = js.getJSONArray(TaskData.RESPONSE_DIVISIONS);
                 division_is_done = true;
+                log.log(Level.INFO, "notifying division_lock");
                 division_lock.notify();
             }
             return;
