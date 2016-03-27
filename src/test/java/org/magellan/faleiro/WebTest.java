@@ -18,7 +18,7 @@ public class WebTest {
 
         doNothing().when(mf).initializeFramework(anyString());
         doNothing().when(mf).startFramework();
-        doReturn(0L).when(mf).createJob(anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyString(), anyObject());
+        doReturn(0L).when(mf).createJob(anyString(), anyInt(), anyString(), anyObject());
         doNothing().when(mf).pauseJob(anyLong());
         doNothing().when(mf).resumeJob(anyLong());
         doNothing().when(mf).stopJob(anyLong());
@@ -33,7 +33,7 @@ public class WebTest {
 
         doNothing().when(mf).initializeFramework(anyString());
         doNothing().when(mf).startFramework();
-        doReturn(-1L).when(mf).createJob(anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyString(), anyObject());
+        doReturn(-1L).when(mf).createJob(anyString(), anyInt(), anyString(), anyObject());
 
         Web.initFramework(mf);
     }

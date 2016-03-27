@@ -60,13 +60,13 @@ public class MagellanFrameworkTest {
     @org.junit.Test
     public void testCreateJob() throws Exception {
         //Test that an invalid parameter causes failure
-        assertEquals(mockFramework.createJob(null, 10, 0.05, 10, 100, "", new JSONObject()),-1);
+        assertEquals(mockFramework.createJob(null, 100, "", new JSONObject()),-1);
 
         // Test that correct parameters give correct id
-        assertEquals(mockFramework.createJob("", 10, 0.05, 10, 100, "", new JSONObject()),0);
+        assertEquals(mockFramework.createJob("", 100, "", new JSONObject()),0);
 
         // Make sure that id numbers are incrementing
-        assertEquals(mockFramework.createJob("", 10, 0.05, 10, 100, "", new JSONObject()),1);
+        assertEquals(mockFramework.createJob("", 100, "", new JSONObject()),1);
     }
 
     @org.junit.Test

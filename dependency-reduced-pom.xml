@@ -74,14 +74,18 @@
               <outputDirectory>${project.reporting.outputDirectory}/jacoco-it</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
         </executions>
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.15</version>
         <configuration>
-          <argLine>${surefireArgLine}</argLine>
-          <skipTests>${skip.unit.tests}</skipTests>
           <excludes>
             <exclude>**/IT*.java</exclude>
           </excludes>
@@ -97,14 +101,19 @@
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
-            <configuration>
-              <argLine>${failsafeArgLine}</argLine>
-              <skipTests>${skip.integration.tests}</skipTests>
-            </configuration>
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.eluder.coveralls</groupId>
+        <artifactId>coveralls-maven-plugin</artifactId>
+        <version>4.1.0</version>
+      </plugin>
     </plugins>
   </build>
+  <properties>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
 </project>
 

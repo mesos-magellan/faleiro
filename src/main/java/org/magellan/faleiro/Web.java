@@ -89,18 +89,14 @@ public class Web {
         }
 
         String jobName = request.getString(WebAPI.JOB_NAME);
-        Integer jobInitTemp = 100;
-        Integer jobIterationsPerTemp = 100;
-        Double jobInitCoolingRate = 0.1;
-        Integer taskTime = request.getInt(WebAPI.JOB_TIME);
+        Integer jobTime = request.getInt(WebAPI.JOB_TIME);
         String moduleUrl = request.getString(WebAPI.MODULE_URL);
-        JSONObject jobData = request.optJSONObject(WebAPI.MODULE_DATA);
-        if(jobData == null) {
-            jobData = new JSONObject();
+        JSONObject moduleData = request.optJSONObject(WebAPI.MODULE_DATA);
+        if(moduleData == null) {
+            moduleData = new JSONObject();
         }
 
-        Long jobId = framework.createJob(jobName, jobInitTemp, jobInitCoolingRate, jobIterationsPerTemp
-                , taskTime, moduleUrl, jobData);
+        Long jobId = framework.createJob(jobName, jobTime, moduleUrl, moduleData);
 
         if(jobId < 0) {
             response.put(WebAPI.MESSAGE, "Failed to create job internally");
