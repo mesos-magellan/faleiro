@@ -135,7 +135,7 @@ public class MagellanJob {
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
         if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
-            finishedTasks = Bits.convert((long)j.get(VerboseStatus.BITFIELD_FINISHED));
+            finishedTasks = Bits.convert((Long)j.get(VerboseStatus.BITFIELD_FINISHED));
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
