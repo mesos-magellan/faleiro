@@ -450,11 +450,13 @@ public class MagellanFramework implements Watcher {
             j_stop.stop();
         }
 
+        Long j_stop_id = j_stop.getJobID();
+
         Iterator it = submittedTaskIdsToJobIds.entrySet().iterator();
         while(it.hasNext()){
             Map.Entry pair = (Map.Entry)it.next();
-            MagellanJob j = (MagellanJob) pair.getValue();
-            if(j.getJobID() == j_stop.getJobID()){
+            Long j_id = (Long) pair.getValue();
+            if(j_id == j_stop_id){
                 try {
                     mesosDriver.get().killTask(Protos.TaskID.parseFrom(((String)pair.getKey()).getBytes()));
                     submittedTaskIdsToJobIds.remove(pair.getKey());
