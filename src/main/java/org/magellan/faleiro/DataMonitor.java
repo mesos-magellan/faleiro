@@ -1,6 +1,7 @@
 package org.magellan.faleiro;
 
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -127,10 +128,11 @@ public class DataMonitor implements Watcher{
 
         try {
             byte newData[] = state.toString().getBytes("UTF-8");
+            int empty_size = new JSONObject().toString().getBytes().length;
 
             // Record changes only if the state has changed
-            if(prevData == null || !Arrays.equals(prevData, newData)) {
-                log.log(Level.INFO, "Writing state to Zookeeper");
+            if((prevData == null || !Arrays.equals(prevData, newData)) && empty_size<newData.length) {
+                log.log(Level.INFO, "Writing state to Zookeeper. Size of " + newData.length);
                 m_zk.setData(m_znode, newData);
                 prevData = newData;
                 return true;
