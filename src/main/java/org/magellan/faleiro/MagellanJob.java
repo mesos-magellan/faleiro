@@ -232,8 +232,8 @@ public class MagellanJob {
         /* lock until notified that division has returned */
         synchronized (division_lock) {
             try {
+                log.log(Level.INFO, "waiting for division to complete");
                 while (!division_is_done) {
-                    log.log(Level.INFO, "Waiting until leader elected");
                     division_lock.wait();
                 }
             } catch (InterruptedException e) {
@@ -317,14 +317,18 @@ public class MagellanJob {
         }
 
         if(!parts[1].equals("div")) {
+            log.log(Level.INFO, "is not a div");
             isDiv = false;
             returnedTaskNum = Integer.parseInt(strReturnedTaskNum);
+        }else{
+            log.log(Level.INFO, "is a div");
         }
 
         switch (taskState) {
             case TASK_ERROR:
             case TASK_FAILED:
             case TASK_LOST:
+                log.log(Level.INFO, "is an error response");
                 if(state != JobState.STOP){
                     log.log(Level.WARNING, "Problem with task, rescheduling it");
 
@@ -374,7 +378,10 @@ public class MagellanJob {
         }
 
         if(data == null){
+            log.log(Level.INFO, "data is null");
             return;
+        }else{
+            log.log(Level.INFO, "data is not null");
         }
 
         // Retrieve the data sent by the executor
@@ -382,16 +389,20 @@ public class MagellanJob {
 
         String returnedTaskId = js.getString(TaskData.UID);
 
+
         if(returnedTaskId.equals(divisionTaskId)) {
+            log.log(Level.INFO, "waiting for division_lock");
             synchronized (division_lock) {
                 /* parse out the result to get list of tasks */
                 returnedResult = js.getJSONArray(TaskData.RESPONSE_DIVISIONS);
                 division_is_done = true;
+                log.log(Level.INFO, "notifying division_lock");
                 division_lock.notify();
             }
+            log.log(Level.INFO, "returning");
             return;
         }
-
+        log.log(Level.INFO, "parsing out data for anneal task");
         /* not an error and not a division, get results */
         double fitness_score = js.getDouble(TaskData.FITNESS_SCORE);
         String best_location = js.getString(TaskData.BEST_LOCATION);
