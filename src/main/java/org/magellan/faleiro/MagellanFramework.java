@@ -125,6 +125,16 @@ public class MagellanFramework implements Watcher {
     private ZookeeperService zk = null;
 
     public MagellanFramework(){
+        log.log(Level.INFO, "Printing Environment Variables:");
+        log.log(Level.INFO, "PRINCIPAL: " + System.getenv("PRINCIPAL"));
+        log.log(Level.INFO, "FRAMEWORK_USER: " + System.getenv("FRAMEWORK_USER"));
+        log.log(Level.INFO, "MASTER_ADDRESS: " + System.getenv("MASTER_ADDRESS"));
+        log.log(Level.INFO, "LIBPROCESS_IP: " + System.getenv("LIBPROCESS_IP"));
+        log.log(Level.INFO, "LIBPROCESS_PORT: " + System.getenv("LIBPROCESS_PORT"));
+        log.log(Level.INFO, "ZK_IP: " + System.getenv("ZK_IP"));
+        log.log(Level.INFO, "ZK_PORT: " + System.getenv("ZK_PORT"));
+        log.log(Level.INFO, "EXECUTOR_PATH: " + System.getenv("EXECUTOR_PATH"));
+
         fenzoScheduler = new TaskScheduler.Builder()
                 .withLeaseOfferExpirySecs(1000000000)
                 .withLeaseRejectAction(new Action1<VirtualMachineLease>() {
