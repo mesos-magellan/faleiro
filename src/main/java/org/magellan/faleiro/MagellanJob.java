@@ -62,19 +62,9 @@ public class MagellanJob {
     // MagellanFramework when it is ready to accept new tasks.
     private BlockingQueue<MagellanTaskRequest> pendingTasks = new LinkedBlockingQueue<>();
 
-    // The number of tasks sent out. This number will be combined with the jobId to create a unique
-    // identifier for each task
-    //private int numTasksSent = 0;
-
-    //private int numFinishedTasks = 0;
-
-    // Each job is limited to sending out a certain number of tasks at a time. Currently, this is
-    // hardcoded to 10 but in time, this number should dynamically change depending on the number
-    // of jobs running in the system.
     private JobState state = JobState.INITIALIZED;
 
     private Protos.ExecutorInfo taskExecutor;
-
 
     /* lock to wait for division task to complete */
     private Object division_lock = new Object();
@@ -137,6 +127,7 @@ public class MagellanJob {
         if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
             finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
             division_is_done = j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED);
+            returnedResult = j.getJSONArray(TaskData.RESPONSE_DIVISIONS);
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
