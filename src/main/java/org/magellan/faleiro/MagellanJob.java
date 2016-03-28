@@ -7,16 +7,13 @@ import org.apache.mesos.Protos;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.BitSet;
 
 import static org.magellan.faleiro.JsonTags.TaskData;
 import static org.magellan.faleiro.JsonTags.VerboseStatus;
@@ -62,19 +59,9 @@ public class MagellanJob {
     // MagellanFramework when it is ready to accept new tasks.
     private BlockingQueue<MagellanTaskRequest> pendingTasks = new LinkedBlockingQueue<>();
 
-    // The number of tasks sent out. This number will be combined with the jobId to create a unique
-    // identifier for each task
-    //private int numTasksSent = 0;
-
-    //private int numFinishedTasks = 0;
-
-    // Each job is limited to sending out a certain number of tasks at a time. Currently, this is
-    // hardcoded to 10 but in time, this number should dynamically change depending on the number
-    // of jobs running in the system.
     private JobState state = JobState.INITIALIZED;
 
     private Protos.ExecutorInfo taskExecutor;
-
 
     /* lock to wait for division task to complete */
     private Object division_lock = new Object();
@@ -134,9 +121,17 @@ public class MagellanJob {
         NUM_NET_MBPS = j.getDouble(VerboseStatus.NUM_NET_MBPS);
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
-        if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
-            finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
+        log.log(Level.INFO, "constructed with zookeeper object, initializing saved state..");
+        if(j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED) == true){
+            String stringEncoding = j.getString(VerboseStatus.BITFIELD_FINISHED);
+            finishedTasks = BitSet.valueOf(Base64.getDecoder().decode(stringEncoding));
             division_is_done = j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED);
+            returnedResult = j.getJSONArray(TaskData.RESPONSE_DIVISIONS);
+            log.log(Level.INFO,"division is done. loading: ");
+            log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
+            log.log(Level.INFO,"\treturnedResult.length = " + returnedResult.length());
+            log.log(Level.INFO,"\tfinishedTasks = " + finishedTasks);
+            log.log(Level.INFO,"\tfinishedTasks as base64 = " + stringEncoding);
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
@@ -200,49 +195,51 @@ public class MagellanJob {
             // wait while job is paused
         }
 
-        try {
-            // To keep the task ids unique throughout the global job space, use the job ID to
-            // ensure uniqueness
-            String newTaskId = "" + jobID + "_" + "div";
-
-            // Choose the magellan specific parameters for the new task
-            //ByteString data = pickNewTaskStartingLocation(jobTaskTime, jobTaskName, newTaskId, jobAdditionalParam);
-
-            int divisions = 0;
-
-            // Add the task to the pending queue until the framework requests it
-            MagellanTaskRequest newTask = new MagellanTaskRequest(
-                    newTaskId,
-                    jobName,
-                    NUM_CPU,
-                    NUM_MEM,
-                    NUM_NET_MBPS,
-                    NUM_DISK,
-                    NUM_PORTS,
-                    packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
-            );
-            
-            pendingTasks.put(newTask);
-            divisionTaskId = newTaskId;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        /* lock until notified that division has returned */
-        log.log(Level.INFO, "waiting for to enter division_lock sync block");
-        synchronized (division_lock) {
+        if(division_is_done.booleanValue() == false) {
             try {
-                log.log(Level.INFO, "waiting for division_is_done");
-                while (division_is_done.booleanValue() == false) {
-                    division_lock.wait();
-                }
-            } catch (InterruptedException e) {
-                log.log(Level.SEVERE, e.getMessage());
-            }
-        }
+                // To keep the task ids unique throughout the global job space, use the job ID to
+                // ensure uniqueness
+                String newTaskId = "" + jobID + "_" + "div";
 
-        /* got result of division task */
-        finishedTasks = new BitSet(returnedResult.length()); // initialize list of isFinished bits for each task. Persisted across crash.
+                // Choose the magellan specific parameters for the new task
+                //ByteString data = pickNewTaskStartingLocation(jobTaskTime, jobTaskName, newTaskId, jobAdditionalParam);
+
+                int divisions = 0;
+
+                // Add the task to the pending queue until the framework requests it
+                MagellanTaskRequest newTask = new MagellanTaskRequest(
+                        newTaskId,
+                        jobName,
+                        NUM_CPU,
+                        NUM_MEM,
+                        NUM_NET_MBPS,
+                        NUM_DISK,
+                        NUM_PORTS,
+                        packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
+                );
+
+                pendingTasks.put(newTask);
+                divisionTaskId = newTaskId;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            /* lock until notified that division has returned */
+            log.log(Level.INFO, "waiting for to enter division_lock sync block");
+            synchronized (division_lock) {
+                try {
+                    log.log(Level.INFO, "waiting for division_is_done");
+                    while (division_is_done.booleanValue() == false) {
+                        division_lock.wait();
+                    }
+                } catch (InterruptedException e) {
+                    log.log(Level.SEVERE, e.getMessage());
+                }
+            }
+
+            /* got result of division task */
+            finishedTasks = new BitSet(returnedResult.length()); // initialize list of isFinished bits for each task. Persisted across crash.
+        }
 
         for (currentTask = 0; currentTask < returnedResult.length(); currentTask++) {
 
@@ -340,56 +337,53 @@ public class MagellanJob {
             returnedTaskNum = Integer.parseInt(strReturnedTaskNum);
         }
 
-        switch (taskState) {
-            case TASK_ERROR:
-            case TASK_FAILED:
-            case TASK_LOST:
-                if(state != JobState.STOP){
-                    log.log(Level.WARNING, "Problem with task, rescheduling it");
+        if(taskState == Protos.TaskState.TASK_ERROR || taskState == Protos.TaskState.TASK_FAILED || taskState == Protos.TaskState.TASK_LOST){
+            if(state != JobState.STOP){
+                log.log(Level.WARNING, "Problem with task, rescheduling it");
 
-                    try {
-                        String newTaskId = taskId;
-                        MagellanTaskRequest newTask;
-                        if(isDiv){
-                            int divisions = 0;
+                try {
+                    String newTaskId = taskId;
+                    MagellanTaskRequest newTask;
+                    if(isDiv){
+                        int divisions = 0;
 
-                            // Add the task to the pending queue until the framework requests it
-                            newTask = new MagellanTaskRequest(
-                                    newTaskId,
-                                    jobName,
-                                    NUM_CPU,
-                                    NUM_MEM,
-                                    NUM_NET_MBPS,
-                                    NUM_DISK,
-                                    NUM_PORTS,
-                                    packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
-                            );
-                        }else {
-                            newTask = new MagellanTaskRequest(
-                                    newTaskId,
-                                    jobName,
-                                    NUM_CPU,
-                                    NUM_MEM,
-                                    NUM_NET_MBPS,
-                                    NUM_DISK,
-                                    NUM_PORTS,
-                                    packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime / (60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
-                            );
-                        }
-                        while(state==JobState.PAUSED){
-                            Thread.yield();
-                            // wait while job is paused
-                        }
                         // Add the task to the pending queue until the framework requests it
-                        pendingTasks.put(newTask);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        newTask = new MagellanTaskRequest(
+                                newTaskId,
+                                jobName,
+                                NUM_CPU,
+                                NUM_MEM,
+                                NUM_NET_MBPS,
+                                NUM_DISK,
+                                NUM_PORTS,
+                                packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
+                        );
+                    }else {
+                        newTask = new MagellanTaskRequest(
+                                newTaskId,
+                                jobName,
+                                NUM_CPU,
+                                NUM_MEM,
+                                NUM_NET_MBPS,
+                                NUM_DISK,
+                                NUM_PORTS,
+                                packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime / (60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
+                        );
                     }
+                    while(state==JobState.PAUSED){
+                        Thread.yield();
+                        // wait while job is paused
+                    }
+                    // Add the task to the pending queue until the framework requests it
+                    pendingTasks.put(newTask);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-                else{
-                    // ignore the response, task was killed intentionally
-                    return;
-                }
+            }
+            else{
+                // ignore the response, task was killed intentionally
+                return;
+            }
         }
 
         if(data == null){
@@ -469,10 +463,20 @@ public class MagellanJob {
 
         if(division_is_done.booleanValue() == false){
             // if null wipe entry
+            log.log(Level.INFO,"division is not done. saving: ");
+            log.log(Level.INFO,"\tdivision_is_done = " + false);
+            log.log(Level.INFO,"\treturnedResult = null");
+            log.log(Level.INFO,"\tfinishedTasks = null");
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, false);
         }else {
             /* save all three states after division is complete */
-            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
+            log.log(Level.INFO,"division is done. saving: ");
+            log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
+            log.log(Level.INFO,"\treturnedResult.lenth = " + returnedResult.length());
+            log.log(Level.INFO,"\tfinishedTasks = " + finishedTasks);
+            log.log(Level.INFO,"\tfinishedTasks as base64 = " + (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
+            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
+                    //Bits.convert(finishedTasks));
             jsonObj.put(TaskData.RESPONSE_DIVISIONS, returnedResult);
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
         }
