@@ -335,56 +335,53 @@ public class MagellanJob {
             returnedTaskNum = Integer.parseInt(strReturnedTaskNum);
         }
 
-        switch (taskState) {
-            case TASK_ERROR:
-            case TASK_FAILED:
-            case TASK_LOST:
-                if(state != JobState.STOP){
-                    log.log(Level.WARNING, "Problem with task, rescheduling it");
+        if(taskState == Protos.TaskState.TASK_ERROR || taskState == Protos.TaskState.TASK_FAILED || taskState == Protos.TaskState.TASK_LOST){
+            if(state != JobState.STOP){
+                log.log(Level.WARNING, "Problem with task, rescheduling it");
 
-                    try {
-                        String newTaskId = taskId;
-                        MagellanTaskRequest newTask;
-                        if(isDiv){
-                            int divisions = 0;
+                try {
+                    String newTaskId = taskId;
+                    MagellanTaskRequest newTask;
+                    if(isDiv){
+                        int divisions = 0;
 
-                            // Add the task to the pending queue until the framework requests it
-                            newTask = new MagellanTaskRequest(
-                                    newTaskId,
-                                    jobName,
-                                    NUM_CPU,
-                                    NUM_MEM,
-                                    NUM_NET_MBPS,
-                                    NUM_DISK,
-                                    NUM_PORTS,
-                                    packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
-                            );
-                        }else {
-                            newTask = new MagellanTaskRequest(
-                                    newTaskId,
-                                    jobName,
-                                    NUM_CPU,
-                                    NUM_MEM,
-                                    NUM_NET_MBPS,
-                                    NUM_DISK,
-                                    NUM_PORTS,
-                                    packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime / (60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
-                            );
-                        }
-                        while(state==JobState.PAUSED){
-                            Thread.yield();
-                            // wait while job is paused
-                        }
                         // Add the task to the pending queue until the framework requests it
-                        pendingTasks.put(newTask);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        newTask = new MagellanTaskRequest(
+                                newTaskId,
+                                jobName,
+                                NUM_CPU,
+                                NUM_MEM,
+                                NUM_NET_MBPS,
+                                NUM_DISK,
+                                NUM_PORTS,
+                                packTaskData(newTaskId, jobTaskName, TaskData.RESPONSE_DIVISIONS, jobAdditionalParam, divisions)
+                        );
+                    }else {
+                        newTask = new MagellanTaskRequest(
+                                newTaskId,
+                                jobName,
+                                NUM_CPU,
+                                NUM_MEM,
+                                NUM_NET_MBPS,
+                                NUM_DISK,
+                                NUM_PORTS,
+                                packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime / (60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
+                        );
                     }
+                    while(state==JobState.PAUSED){
+                        Thread.yield();
+                        // wait while job is paused
+                    }
+                    // Add the task to the pending queue until the framework requests it
+                    pendingTasks.put(newTask);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-                else{
-                    // ignore the response, task was killed intentionally
-                    return;
-                }
+            }
+            else{
+                // ignore the response, task was killed intentionally
+                return;
+            }
         }
 
         if(data == null){
