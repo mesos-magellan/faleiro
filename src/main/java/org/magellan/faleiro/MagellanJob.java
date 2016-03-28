@@ -474,8 +474,8 @@ public class MagellanJob {
             log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
             log.log(Level.INFO,"\treturnedResult.lenth = " + returnedResult.length());
             log.log(Level.INFO,"\tfinishedTasks = " + finishedTasks);
-            log.log(Level.INFO,"\tfinishedTasks as base64 = " + Base64.getEncoder().encode(finishedTasks.toByteArray()).toString());
-            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Base64.getEncoder().encode(finishedTasks.toByteArray()).toString());
+            log.log(Level.INFO,"\tfinishedTasks as base64 = " + (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
+            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
                     //Bits.convert(finishedTasks));
             jsonObj.put(TaskData.RESPONSE_DIVISIONS, returnedResult);
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
