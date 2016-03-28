@@ -380,10 +380,7 @@ public class MagellanJob {
                     e.printStackTrace();
                 }
             }
-            else{
-                // ignore the response, task was killed intentionally
-                return;
-            }
+            return;
         }
 
         if(data == null){
