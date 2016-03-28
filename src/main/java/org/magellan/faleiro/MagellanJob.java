@@ -124,12 +124,15 @@ public class MagellanJob {
         NUM_NET_MBPS = j.getDouble(VerboseStatus.NUM_NET_MBPS);
         NUM_DISK = j.getDouble(VerboseStatus.NUM_DISK);
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
-        if(j.has(VerboseStatus.BITFIELD_FINISHED)) {
-            log.log(Level.INFO, "finishedTasks bitfield is: " + j.getLong(VerboseStatus.BITFIELD_FINISHED));
-            log.log(Level.INFO, "converted that to ");
+        log.log(Level.INFO, "constructed with zookeeper object, initializing saved state..");
+        if(j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED) == true){
             finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
             division_is_done = j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED);
             returnedResult = j.getJSONArray(TaskData.RESPONSE_DIVISIONS);
+            log.log(Level.INFO,"division is done. loading: ");
+            log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
+            log.log(Level.INFO,"\treturnedResult = " + returnedResult);
+            log.log(Level.INFO,"\tfinishedTasks = " + j.getLong(VerboseStatus.BITFIELD_FINISHED));
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
@@ -461,9 +464,17 @@ public class MagellanJob {
 
         if(division_is_done.booleanValue() == false){
             // if null wipe entry
+            log.log(Level.INFO,"division is not done. saving: ");
+            log.log(Level.INFO,"\tdivision_is_done = " + false);
+            log.log(Level.INFO,"\treturnedResult = null");
+            log.log(Level.INFO,"\tfinishedTasks = null");
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, false);
         }else {
             /* save all three states after division is complete */
+            log.log(Level.INFO,"division is done. saving: ");
+            log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
+            log.log(Level.INFO,"\treturnedResult = " + returnedResult);
+            log.log(Level.INFO,"\tfinishedTasks = " + Bits.convert(finishedTasks));
             jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
             jsonObj.put(TaskData.RESPONSE_DIVISIONS, returnedResult);
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
