@@ -7,16 +7,13 @@ import org.apache.mesos.Protos;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.BitSet;
 
 import static org.magellan.faleiro.JsonTags.TaskData;
 import static org.magellan.faleiro.JsonTags.VerboseStatus;
@@ -126,13 +123,15 @@ public class MagellanJob {
         NUM_PORTS = j.getInt(VerboseStatus.NUM_PORTS);
         log.log(Level.INFO, "constructed with zookeeper object, initializing saved state..");
         if(j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED) == true){
-            finishedTasks = Bits.convert(j.getLong(VerboseStatus.BITFIELD_FINISHED));
+            String stringEncoding = j.getString(VerboseStatus.BITFIELD_FINISHED);
+            finishedTasks = BitSet.valueOf(Base64.getDecoder().decode(stringEncoding));
             division_is_done = j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED);
             returnedResult = j.getJSONArray(TaskData.RESPONSE_DIVISIONS);
             log.log(Level.INFO,"division is done. loading: ");
             log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
             log.log(Level.INFO,"\treturnedResult.length = " + returnedResult.length());
-            log.log(Level.INFO,"\tfinishedTasks = " + VerboseStatus.BITFIELD_FINISHED);
+            log.log(Level.INFO,"\tfinishedTasks = " + finishedTasks);
+            log.log(Level.INFO,"\tfinishedTasks as base64 = " + stringEncoding);
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
@@ -475,7 +474,9 @@ public class MagellanJob {
             log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
             log.log(Level.INFO,"\treturnedResult.lenth = " + returnedResult.length());
             log.log(Level.INFO,"\tfinishedTasks = " + finishedTasks);
-            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
+            log.log(Level.INFO,"\tfinishedTasks as base64 = " + Base64.getEncoder().encode(finishedTasks.toByteArray()).toString());
+            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Base64.getEncoder().encode(finishedTasks.toByteArray()).toString());
+                    //Bits.convert(finishedTasks));
             jsonObj.put(TaskData.RESPONSE_DIVISIONS, returnedResult);
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
         }
