@@ -88,6 +88,7 @@ public class MagellanFramework implements Watcher {
                     }
                     break;
             }
+            launchedTasks.remove(taskStatus.getTaskId().getValue());
         }
 
         public void frameworkMessage(SchedulerDriver schedulerDriver, Protos.ExecutorID executorID, Protos.SlaveID slaveID, byte[] bytes) {
@@ -412,13 +413,27 @@ public class MagellanFramework implements Watcher {
                     // For each task that will be run on this host, build a TaskInfo object which will be submitted to
                     // the mesos driver for scheduling
                     for(TaskAssignmentResult t: result.getTasksAssigned()) {
-                        stringBuilder.append(t.getTaskId()).append(", ");
-                        taskInfos.add(getTaskInfo(slaveId, t.getTaskId()));
-                        // remove task from pending tasks map and put into launched tasks map
-                        pendingTasksMap.remove(t.getTaskId());
-                        launchedTasks.put(t.getTaskId(), leasesUsed.get(0).hostname());
-                        // Notify Fenzo that the task is being deployed to a host
-                        fenzoScheduler.getTaskAssigner().call(t.getRequest(), leasesUsed.get(0).hostname());
+                        Long jId= (Long)submittedTaskIdsToJobIds.get(t.getTaskId());
+                        MagellanJob j = jobsList.get(jId);
+
+                        if(j.getState() == MagellanJob.JobState.STOP) {
+                            // Just remove it. No chance for this to be re-run
+                            pendingTasksMap.remove(t.getTaskId());
+                            submittedTaskIdsToJobIds.remove(t.getTaskId());
+                            log.log(Level.INFO, "Not scheduling task with id: " + t.getTaskId() + ". Job is stopped.");
+                        }else if (j.getState() == MagellanJob.JobState.PAUSED){
+                            // Dont do anything with it. Keep it in our pendinTasksMap and dont use the resource offer
+                            // It will get reclaimed by mesos
+                            log.log(Level.INFO, "Not scheduling task with id: " + t.getTaskId() + ". Job is paused.");
+                        } else {
+                            stringBuilder.append(t.getTaskId()).append(", ");
+                            taskInfos.add(getTaskInfo(slaveId, t.getTaskId()));
+                            // remove task from pending tasks map and put into launched tasks map
+                            pendingTasksMap.remove(t.getTaskId());
+                            launchedTasks.put(t.getTaskId(), leasesUsed.get(0).hostname());
+                            // Notify Fenzo that the task is being deployed to a host
+                            fenzoScheduler.getTaskAssigner().call(t.getRequest(), leasesUsed.get(0).hostname());
+                        }
                     }
                     List<Protos.OfferID> offerIDs = new ArrayList<>();
                     // Get a list of all the resource offer ids used for this host.
@@ -452,14 +467,19 @@ public class MagellanFramework implements Watcher {
 
         Long j_stop_id = j_stop.getJobID();
 
-        Iterator it = submittedTaskIdsToJobIds.entrySet().iterator();
+        Iterator it = launchedTasks.entrySet().iterator();
+
         while(it.hasNext()){
             Map.Entry pair = (Map.Entry)it.next();
-            Long j_id = (Long) pair.getValue();
-            if(j_id == j_stop_id){
+            String  t_id = (String) pair.getKey();
+            Long j_id = submittedTaskIdsToJobIds.get(t_id);
+
+            if(j_id == j_stop_id && launchedTasks.containsKey(t_id)){
                 log.log(Level.INFO, "Killing task with id: " + pair.getKey());
-                mesosDriver.get().killTask(Protos.TaskID.newBuilder().setValue((String)pair.getKey()).build());
-                //submittedTaskIdsToJobIds.remove(pair.getKey());
+                mesosDriver.get().killTask(Protos.TaskID.newBuilder().setValue(t_id).build());
+                //submittedTaskIdsToJobIds.remove(t_id);
+                //launchedTasks.remove(t_id);
+                //fenzoScheduler.getTaskUnAssigner().call(t_id, launchedTasks.get(t_id));
             }
         }
     }
