@@ -131,8 +131,8 @@ public class MagellanJob {
             returnedResult = j.getJSONArray(TaskData.RESPONSE_DIVISIONS);
             log.log(Level.INFO,"division is done. loading: ");
             log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
-            log.log(Level.INFO,"\treturnedResult = " + returnedResult);
-            log.log(Level.INFO,"\tfinishedTasks = " + j.getLong(VerboseStatus.BITFIELD_FINISHED));
+            log.log(Level.INFO,"\treturnedResult.length = " + returnedResult.length());
+            log.log(Level.INFO,"\tfinishedTasks = " + VerboseStatus.BITFIELD_FINISHED);
         }
 
         jobID = j.getInt(SimpleStatus.JOB_ID);
@@ -473,8 +473,8 @@ public class MagellanJob {
             /* save all three states after division is complete */
             log.log(Level.INFO,"division is done. saving: ");
             log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
-            log.log(Level.INFO,"\treturnedResult = " + returnedResult);
-            log.log(Level.INFO,"\tfinishedTasks = " + Bits.convert(finishedTasks));
+            log.log(Level.INFO,"\treturnedResult.lenth = " + returnedResult.length());
+            log.log(Level.INFO,"\tfinishedTasks = " + finishedTasks);
             jsonObj.put(VerboseStatus.BITFIELD_FINISHED, Bits.convert(finishedTasks));
             jsonObj.put(TaskData.RESPONSE_DIVISIONS, returnedResult);
             jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
