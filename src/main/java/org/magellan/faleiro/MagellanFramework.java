@@ -84,7 +84,7 @@ public class MagellanFramework implements Watcher {
                         //Notify Fenzo that the task has completed and is no longer assigned
                         String  id = launchedTasks.get(taskStatus.getTaskId().getValue());
                         if(id!=null) {
-                            fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), launchedTasks.get(taskStatus.getTaskId().getValue()));
+                            fenzoScheduler.getTaskUnAssigner().call(taskStatus.getTaskId().getValue(), id);
                         }
                     } catch (UnsupportedEncodingException e) {
                         log.log(Level.SEVERE, e.getMessage());
