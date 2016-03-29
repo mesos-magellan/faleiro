@@ -26,6 +26,7 @@ public abstract class JsonTags {
         public static final String TASK_NAME = "name";
         public static final String TASK_COMMAND = "command";
         public static final String TASK_DIVISIONS = "divisions";
+        public static final String TASK_ANNEAL = "anneal";
         public static final String TASK_DATA = "sstates";
         public static final String RESPONSE_DIVISIONS = "divisions";
         public static final String MINUTES_PER_DIVISION = "minutes_per_division";
@@ -37,6 +38,7 @@ public abstract class JsonTags {
         public static final String JOB_NAME = "job_name";
         public static final String JOB_COUNT = "job_count";
         public static final String JOB_STARTING_TIME = "job_starting_time";
+        public static final String JOB_FINISHING_TIME = "job_finishing_time";
         public static final String TASK_SECONDS = "task_seconds";
         public static final String TASK_NAME = "task_name";
         public static final String BEST_LOCATION = "best_location";
