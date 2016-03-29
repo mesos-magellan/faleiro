@@ -289,7 +289,8 @@ public class Web {
 
         JSONObject response = new JSONObject();
         res.status(getJobResponse(response, req.params(":" + WebAPI.JOB_ID)));
-        return response.getJSONObject(WebAPI.RESPONSE).toString();
+        JSONObject ret = (response.optJSONObject(WebAPI.RESPONSE) == null) ? new JSONObject() : response.optJSONObject(WebAPI.RESPONSE);
+        return ret.toString();
     }
 
     public static Integer getJobResponse(JSONObject response, String job_id) {
