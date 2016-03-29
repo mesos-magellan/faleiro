@@ -60,5 +60,6 @@ public abstract class JsonTags {
         public static final String NUM_PORTS = "num_ports";
         public static final String BITFIELD_FINISHED = "bitfield_finished";
         public static final String DIVISION_IS_FINISHED = "divisions_is_finished";
+        public static final String RAN_BEFORE = "ran_before";
     }
 }
