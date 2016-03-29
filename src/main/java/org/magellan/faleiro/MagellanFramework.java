@@ -91,7 +91,7 @@ public class MagellanFramework implements Watcher {
                     }
                     break;
             }
-            launchedTasks.remove(taskStatus.getTaskId().getValue());
+            //launchedTasks.remove(taskStatus.getTaskId().getValue());
         }
 
         public void frameworkMessage(SchedulerDriver schedulerDriver, Protos.ExecutorID executorID, Protos.SlaveID slaveID, byte[] bytes) {
@@ -124,7 +124,7 @@ public class MagellanFramework implements Watcher {
     private final BlockingQueue<VirtualMachineLease> leasesQueue = new LinkedBlockingQueue<>();
     private final Map<String, MagellanTaskRequest> pendingTasksMap = new HashMap<>();
     private final ConcurrentHashMap<String, Long> submittedTaskIdsToJobIds = new ConcurrentHashMap<>();
-    private final HashMap<String, String> launchedTasks = new HashMap<>();
+    private final ConcurrentHashMap<String, String> launchedTasks = new ConcurrentHashMap<>();
     private Watcher zookeeperWatcher = null;
     private ZookeeperService zk = null;
 
@@ -474,11 +474,12 @@ public class MagellanFramework implements Watcher {
      */
     public void stopJob(Long jobID) {
         MagellanJob j_stop = jobsList.get(jobID);
-        if(j_stop!=null){
-            j_stop.stop();
+        if(j_stop==null){
+            log.log(Level.INFO, "Trying to stop invalid jobID: " + jobID);
         }
+        j_stop.stop();
 
-        Long j_stop_id = j_stop.getJobID();
+        Long j_stop_id = jobID;
 
         Iterator it = launchedTasks.entrySet().iterator();
 
@@ -486,9 +487,10 @@ public class MagellanFramework implements Watcher {
             Map.Entry pair = (Map.Entry)it.next();
             String  t_id = (String) pair.getKey();
             Long j_id = submittedTaskIdsToJobIds.get(t_id);
+            log.log(Level.INFO, "Trying to kill j_id is: " + j_id + " j_stop_id is: " + j_stop_id);
 
-            if(j_id == j_stop_id && launchedTasks.containsKey(t_id)){
-                log.log(Level.INFO, "Killing task with id: " + pair.getKey());
+            if(j_id!= null && j_id.longValue() == j_stop_id.longValue() ){
+                log.log(Level.INFO, "Killing task with id: " + t_id);
                 mesosDriver.get().killTask(Protos.TaskID.newBuilder().setValue(t_id).build());
                 //submittedTaskIdsToJobIds.remove(t_id);
                 //launchedTasks.remove(t_id);
