@@ -427,6 +427,9 @@ public class MagellanFramework implements Watcher {
                     // the mesos driver for scheduling
                     for(TaskAssignmentResult t: result.getTasksAssigned()) {
                         Long jId= (Long)submittedTaskIdsToJobIds.get(t.getTaskId());
+                        if(jId==null){
+                            continue;
+                        }
                         MagellanJob j = jobsList.get(jId);
 
                         if(j.getState() == MagellanJob.JobState.STOP) {
