@@ -11,7 +11,9 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,6 +38,8 @@ public class MagellanJob {
 
     private final long jobStartingTime;
 
+    private AtomicLong jobFinishingTime = new AtomicLong();
+
     // How long each task runs for
     private int jobTaskTime;
 
@@ -44,16 +48,19 @@ public class MagellanJob {
 
     // The energy of the current best solution. In our system, a lower energy translates to a better solution
     private double jobBestEnergy = Double.MAX_VALUE;
+    private Object jobBestEnergy_lock = new Object();
 
     // This comes from the client and tells the agent the name of the executor to run for tasks created by this job
     private String jobTaskName;
 
     // Additional parameters passed in from the user
-    private JSONObject jobAdditionalParam = null;
+    private final JSONObject jobAdditionalParam;
 
     // A list of the best energies found by every task run by this job.
     //private ConcurrentLinkedDeque<Double> energyHistory = new ConcurrentLinkedDeque<>();
     private JSONArray energyHistory = new JSONArray();
+
+    private Object energyHistory_lock = new Object();
 
     // This list stores tasks that are ready to be scheduled. This list is then consumed by the
     // MagellanFramework when it is ready to accept new tasks.
@@ -66,7 +73,10 @@ public class MagellanJob {
     /* lock to wait for division task to complete */
     private Object division_lock = new Object();
 
-    private Boolean division_is_done = false;
+    private Object returnedResult_lock = new Object();
+    private AtomicInteger retLength = new AtomicInteger(); // used to prevent constant atomic access of returnedResult
+
+    private AtomicBoolean division_is_done = new AtomicBoolean(false);
 
     /* task ID of division, waiting until this is returned to make more tasks */
     private String divisionTaskId;
@@ -74,9 +84,11 @@ public class MagellanJob {
     /* json array of returned division. iterated through to make new tasks */
     private JSONArray returnedResult;
 
-    private BitSet finishedTasks = null;
+    private BitSet finishedTasks; // every access sync on finishedTasks_lock object
+    private Object finishedTasks_lock = new Object();
 
-    private int currentTask;
+    private int currentTask; //index of curent task, used to prevent getting lock on every access
+    private Object curTaskObj; //current task object, used to prevent getting lock on every access
 
     /**
      *
@@ -124,12 +136,12 @@ public class MagellanJob {
         log.log(Level.INFO, "constructed with zookeeper object, initializing saved state..");
         if(j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED) == true){
             String stringEncoding = j.getString(VerboseStatus.BITFIELD_FINISHED);
-            finishedTasks = BitSet.valueOf(Base64.getDecoder().decode(stringEncoding));
-            division_is_done = j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED);
-            returnedResult = j.getJSONArray(TaskData.RESPONSE_DIVISIONS);
+            finishedTasks = BitSet.valueOf(Base64.getDecoder().decode(stringEncoding)); //in constructor, thread safe
+            division_is_done.set(j.getBoolean(VerboseStatus.DIVISION_IS_FINISHED));
+            returnedResult = j.getJSONArray(TaskData.RESPONSE_DIVISIONS); //in constructor, thread safe
             log.log(Level.INFO,"division is done. loading: ");
-            log.log(Level.INFO,"\tdivision_is_done = " + division_is_done);
-            log.log(Level.INFO,"\treturnedResult.length = " + returnedResult.length());
+            log.log(Level.INFO,"\tdivision_is_done = " + division_is_done.get());
+            log.log(Level.INFO,"\treturnedResult.length = " + returnedResult.length()); //in constructor, thread safe
             log.log(Level.INFO,"\tfinishedTasks = " + finishedTasks);
             log.log(Level.INFO,"\tfinishedTasks as base64 = " + stringEncoding);
         }
@@ -141,7 +153,9 @@ public class MagellanJob {
         jobTaskName = j.getString(SimpleStatus.TASK_NAME);
         jobCurrentBestSolution = j.getString(SimpleStatus.BEST_LOCATION);
         jobBestEnergy = j.getDouble(SimpleStatus.BEST_ENERGY);
-        energyHistory = j.getJSONArray(SimpleStatus.ENERGY_HISTORY);
+        synchronized (energyHistory_lock) {
+            energyHistory = j.getJSONArray(SimpleStatus.ENERGY_HISTORY);
+        }
         jobAdditionalParam = j.getJSONObject(SimpleStatus.ADDITIONAL_PARAMS);
         state = (new Gson()).fromJson(j.getString(SimpleStatus.CURRENT_STATE), JobState.class);
 
@@ -195,7 +209,7 @@ public class MagellanJob {
             // wait while job is paused
         }
 
-        if(division_is_done.booleanValue() == false) {
+        if(division_is_done.get() == false) {
             try {
                 // To keep the task ids unique throughout the global job space, use the job ID to
                 // ensure uniqueness
@@ -229,7 +243,7 @@ public class MagellanJob {
             synchronized (division_lock) {
                 try {
                     log.log(Level.INFO, "waiting for division_is_done");
-                    while (division_is_done.booleanValue() == false) {
+                    while (division_is_done.get() == false) {
                         division_lock.wait();
                     }
                 } catch (InterruptedException e) {
@@ -237,11 +251,20 @@ public class MagellanJob {
                 }
             }
 
+            synchronized (returnedResult_lock) {
+                retLength.set(returnedResult.length());
+            }
             /* got result of division task */
-            finishedTasks = new BitSet(returnedResult.length()); // initialize list of isFinished bits for each task. Persisted across crash.
+            synchronized (returnedResult_lock) {
+                finishedTasks = new BitSet(retLength.get()); // initialize list of isFinished bits for each task. Persisted across crash.
+            }
         }
 
-        for (currentTask = 0; currentTask < returnedResult.length(); currentTask++) {
+        for (currentTask = 0; currentTask < retLength.get(); currentTask++) {
+
+            synchronized (returnedResult_lock){
+                curTaskObj = returnedResult.get(currentTask);
+            }
 
             while(state==JobState.PAUSED){
                 Thread.yield();
@@ -253,10 +276,15 @@ public class MagellanJob {
             }
 
             // check if this index was already completed in a previous run, if so skip it
-            if(!finishedTasks.get(currentTask)){
+            boolean tmpCurrentTask;
+            synchronized (finishedTasks_lock){
+                tmpCurrentTask = finishedTasks.get(currentTask);
+            }
+            if(!tmpCurrentTask){
                  /* got a list of all the partitions, create a task for each */
                 try {
                     String newTaskId = "" + jobID + "_" + currentTask;
+
 
                     MagellanTaskRequest newTask = new MagellanTaskRequest(
                             newTaskId,
@@ -266,7 +294,12 @@ public class MagellanJob {
                             NUM_NET_MBPS,
                             NUM_DISK,
                             NUM_PORTS,
-                            packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime/(60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(currentTask))
+                            packTaskData(newTaskId,
+                                    jobTaskName,
+                                    TaskData.TASK_ANNEAL,
+                                    jobTaskTime/(60.0 * retLength.get()),
+                                    jobAdditionalParam,
+                                    curTaskObj)
                     );
 
                     // Add the task to the pending queue until the framework requests it
@@ -277,9 +310,14 @@ public class MagellanJob {
             }
         }
 
-        log.log(Level.INFO, "Finished sending tasks. Waiting now. Tasks sent = " + returnedResult.length());
+        log.log(Level.INFO, "Finished sending tasks. Waiting now. Tasks sent = " + retLength.get());
 
-        while(state != JobState.STOP && (returnedResult.length() != finishedTasks.cardinality())) {
+        int tmpCardinality;
+        synchronized (finishedTasks_lock){
+            tmpCardinality = finishedTasks.cardinality();
+        }
+
+        while(state != JobState.STOP && (retLength.get() != tmpCardinality)) {
             // wait for all tasks to finish
             Thread.yield();
         }
@@ -287,7 +325,9 @@ public class MagellanJob {
         if(state!=JobState.STOP) {
             state = JobState.DONE;
         }
-        log.log(Level.INFO, "[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
+        synchronized (jobBestEnergy_lock) {
+            log.log(Level.INFO, "[Job " + jobID + "]" + " done. Best fitness (" + jobBestEnergy + ") achieved at location " + jobCurrentBestSolution);
+        }
     }
 
     /**
@@ -367,7 +407,7 @@ public class MagellanJob {
                                 NUM_NET_MBPS,
                                 NUM_DISK,
                                 NUM_PORTS,
-                                packTaskData(newTaskId, jobTaskName, "anneal", jobTaskTime / (60.0 * returnedResult.length()), jobAdditionalParam, returnedResult.get(returnedTaskNum))
+                                packTaskData(newTaskId, jobTaskName, TaskData.TASK_ANNEAL, jobTaskTime / (60.0 * retLength.get()), jobAdditionalParam, returnedResult.get(returnedTaskNum))
                         );
                     }
                     while(state==JobState.PAUSED){
@@ -400,8 +440,10 @@ public class MagellanJob {
             synchronized (division_lock) {
                 log.log(Level.INFO, "equal, got division_lock");
                 /* parse out the result to get list of tasks */
-                returnedResult = js.getJSONArray(TaskData.RESPONSE_DIVISIONS);
-                division_is_done = true;
+                synchronized (returnedResult_lock) {
+                    returnedResult = js.getJSONArray(TaskData.RESPONSE_DIVISIONS);
+                }
+                division_is_done.set(true);
                 log.log(Level.INFO, "notifying division_lock");
                 division_lock.notify();
             }
@@ -411,15 +453,23 @@ public class MagellanJob {
         double fitness_score = js.getDouble(TaskData.FITNESS_SCORE);
         String best_location = js.getString(TaskData.BEST_LOCATION);
 
-        finishedTasks.set(returnedTaskNum); // mark task as finished. needed for zookeeper state revival
+        synchronized (returnedResult_lock) {
+            finishedTasks.set(returnedTaskNum); // mark task as finished. needed for zookeeper state revival
+        }
 
-        energyHistory.put(fitness_score);
+        synchronized (energyHistory_lock) {
+            energyHistory.put(fitness_score);
+        }
         // If a better score was discovered, make this our global, best location
-        if(fitness_score < jobBestEnergy) {
-            jobCurrentBestSolution = best_location;
-            jobBestEnergy = fitness_score;
+
+        synchronized (jobBestEnergy_lock) {
+            if (fitness_score < jobBestEnergy) {
+                jobCurrentBestSolution = best_location;
+                jobBestEnergy = fitness_score;
+            }
         }
         log.log(Level.FINE, "Job: " + getJobID() + " processed finished task");
+        jobFinishingTime.set(System.currentTimeMillis());
     }
 
     public void stop() {
@@ -452,13 +502,13 @@ public class MagellanJob {
         JSONObject jsonObj = getSimpleStatus();
 
         // Store constants
-        jsonObj.put(VerboseStatus.NUM_CPU, NUM_CPU);
-        jsonObj.put(VerboseStatus.NUM_MEM, NUM_MEM);
-        jsonObj.put(VerboseStatus.NUM_NET_MBPS, NUM_NET_MBPS);
-        jsonObj.put(VerboseStatus.NUM_DISK, NUM_DISK);
-        jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS);
+        jsonObj.put(VerboseStatus.NUM_CPU, NUM_CPU); // final, thread safe
+        jsonObj.put(VerboseStatus.NUM_MEM, NUM_MEM); // final, thread safe
+        jsonObj.put(VerboseStatus.NUM_NET_MBPS, NUM_NET_MBPS); // final, thread safe
+        jsonObj.put(VerboseStatus.NUM_DISK, NUM_DISK); // final, thread safe
+        jsonObj.put(VerboseStatus.NUM_PORTS, NUM_PORTS); // final, thread safe
 
-        if(division_is_done.booleanValue() == false){
+        if(division_is_done.get() == false){ //atomic object
             // if null wipe entry
             log.log(Level.FINE,"division is not done. saving: ");
             log.log(Level.FINE,"\tdivision_is_done = " + false);
@@ -468,14 +518,15 @@ public class MagellanJob {
         }else {
             /* save all three states after division is complete */
             log.log(Level.FINE,"division is done. saving: ");
-            log.log(Level.FINE,"\tdivision_is_done = " + division_is_done);
-            log.log(Level.FINE,"\treturnedResult.lenth = " + returnedResult.length());
-            log.log(Level.FINE,"\tfinishedTasks = " + finishedTasks);
-            log.log(Level.FINE,"\tfinishedTasks as base64 = " + (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
-            jsonObj.put(VerboseStatus.BITFIELD_FINISHED, (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
-                    //Bits.convert(finishedTasks));
+            log.log(Level.FINE,"\tdivision_is_done = " + division_is_done.get()); //atomic object
+            log.log(Level.FINE,"\treturnedResult.lenth = " + retLength.get()); //atomic object
+            synchronized (finishedTasks_lock) {
+                log.log(Level.FINE, "\tfinishedTasks = " + finishedTasks);
+                log.log(Level.FINE, "\tfinishedTasks as base64 = " + (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
+                jsonObj.put(VerboseStatus.BITFIELD_FINISHED, (Base64.getEncoder().encodeToString(finishedTasks.toByteArray())));
+            }
             jsonObj.put(TaskData.RESPONSE_DIVISIONS, returnedResult);
-            jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done);
+            jsonObj.put(VerboseStatus.DIVISION_IS_FINISHED, division_is_done.get()); //atomic object
         }
 
         return  jsonObj;
@@ -490,12 +541,17 @@ public class MagellanJob {
         jsonObj.put(SimpleStatus.JOB_ID, getJobID());
         jsonObj.put(SimpleStatus.JOB_NAME, getJobName());
         jsonObj.put(SimpleStatus.JOB_STARTING_TIME, getStartingTime());
+        jsonObj.put(SimpleStatus.JOB_FINISHING_TIME, getFinishTime());
         jsonObj.put(SimpleStatus.TASK_SECONDS, getTaskTime());
         jsonObj.put(SimpleStatus.TASK_NAME, getJobTaskName());
         jsonObj.put(SimpleStatus.BEST_LOCATION, getBestLocation());
         jsonObj.put(SimpleStatus.BEST_ENERGY, getBestEnergy());
-        jsonObj.put(SimpleStatus.ENERGY_HISTORY, getEnergyHistory());
-        jsonObj.put(SimpleStatus.NUM_FINISHED_TASKS, getNumFinishedTasks());
+        synchronized (energyHistory_lock) {
+            jsonObj.put(SimpleStatus.ENERGY_HISTORY, getEnergyHistory());
+        }
+        synchronized (finishedTasks_lock) {
+            jsonObj.put(SimpleStatus.NUM_FINISHED_TASKS, getNumFinishedTasks());
+        }
         jsonObj.put(SimpleStatus.NUM_TOTAL_TASKS, getNumTotalTasks());
         jsonObj.put(SimpleStatus.ADDITIONAL_PARAMS, getJobAdditionalParam());
         jsonObj.put(SimpleStatus.CURRENT_STATE, getState());
@@ -553,16 +609,30 @@ public class MagellanJob {
 
     public String getBestLocation() { return jobCurrentBestSolution; }
 
-    public double getBestEnergy() { return jobBestEnergy; }
+    public double getBestEnergy() {
+        double tmpJobBestEnergy;
+        synchronized (jobBestEnergy_lock){
+            tmpJobBestEnergy = jobBestEnergy;
+        }
+        return tmpJobBestEnergy;
+    }
 
     public Long getStartingTime() { return jobStartingTime; }
 
-    public JSONArray getEnergyHistory() { return energyHistory; }
+    public Long getFinishTime() { return jobFinishingTime.get(); }
+
+    public JSONArray getEnergyHistory() {
+        JSONArray tmpEnergyHistory;
+        synchronized (energyHistory_lock){
+            tmpEnergyHistory = energyHistory;
+        }
+        return tmpEnergyHistory;
+    }
 
     public Protos.ExecutorInfo getTaskExecutor() { return taskExecutor; }
 
     public int getNumFinishedTasks(){
-        if(division_is_done){
+        if(division_is_done.get()){
             return finishedTasks.cardinality();
         }else{
             return 0;
@@ -572,8 +642,8 @@ public class MagellanJob {
     public int getNumTasksSent(){ return currentTask;}
 
     public int getNumTotalTasks() {
-        if(division_is_done){
-            return returnedResult.length();
+        if(division_is_done.get()){
+            return retLength.get();
         }else{
             return -1; // number of total tasks is unknown, job has not been divided into tasks yet
         }
