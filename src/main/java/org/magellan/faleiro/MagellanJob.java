@@ -74,7 +74,7 @@ public class MagellanJob {
     private Object division_lock = new Object();
 
     private Object returnedResult_lock = new Object();
-    private AtomicInteger retLength; // used to prevent constant atomic access of returnedResult
+    private AtomicInteger retLength = new AtomicInteger(); // used to prevent constant atomic access of returnedResult
 
     private AtomicBoolean division_is_done = new AtomicBoolean(false);
 
